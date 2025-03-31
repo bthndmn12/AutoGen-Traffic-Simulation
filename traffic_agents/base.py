@@ -1,7 +1,6 @@
 from autogen_core import AgentId, MessageContext, message_handler
 from messages.types import MyMessageType
 
-# --- Base Assistant ---
 from autogen_core import RoutedAgent
 
 class MyAssistant(RoutedAgent):
