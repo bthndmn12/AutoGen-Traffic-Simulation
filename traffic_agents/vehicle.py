@@ -57,7 +57,8 @@ class VehicleAssistant(MyAssistant):
         self.y = start_y
         self.current_position = current_position
         self.parked = False
-        self.wait_time = 0
+        self.wait_times = []
+        self.current_wait = 0
         self.roads = roads or []
         self.crossings = crossings or []
         self.traffic_lights = traffic_lights or []
@@ -344,23 +345,27 @@ class VehicleAssistant(MyAssistant):
         """Continue the turning process"""
         # Check if we're at an intersection that might have a traffic light or crossing
         if await self._check_for_obstacles(self.intersection_point):
-            self.wait_time += 1
+            self.current_wait += 1
             return f"Waiting at intersection due to red light or occupied crossing. Wait time: {self.wait_time}"
 
         # Check for other vehicles at intersection (collision avoidance)
         if await self._check_for_collisions():
-            self.wait_time += 1
+            self.current_wait += 1
             return f"Waiting at intersection due to other vehicles. Wait time: {self.wait_time}"
 
         # Check if target road has capacity before completing turn
         if not await self._check_road_capacity(self.next_road_idx):
-            self.wait_time += 1
+            self.current_wait += 1
             return f"Waiting to turn - target road at capacity. Wait time: {self.wait_time}"
 
+        # Vehicle moves, append the time in the list and reset the counter
+        if self.current_wait > 0:
+            self.wait_times.append(self.current_wait)
+            self.current_wait = 0
+        
         # Complete the turn
         self.is_turning = False
         self.current_position = self.next_road_idx
-        self.wait_time = 0
         self.update_coordinates()
         self.route.append(self.current_position)
         
