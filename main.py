@@ -156,6 +156,19 @@ async def main():
             
         await asyncio.sleep(1)
 
+    for vehicle_id, agent in vehicles:
+        if agent.wait_times:
+            max_wait_time = max(agent.wait_times)
+            min_wait_time = min(agent.wait_times)
+            avg_wait_time = sum(agent.wait_times) / len(agent.wait_times)
+
+            print(f"Vehicle ID: {vehicle_id}")
+            print(f"Max Wait Time: {max_wait_time} sec")
+            print(f"Min Wait Time: {min_wait_time} sec")
+            print(f"Average Wait Time: {avg_wait_time:.2f} sec")
+        else:
+            print(f"Vehicle ID: {vehicle_id} has no wait times recorded.")
+    
     await runtime.stop()
     visualizer.stop()
     await visualizer_task

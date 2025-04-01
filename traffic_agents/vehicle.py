@@ -143,8 +143,8 @@ class VehicleAssistant(MyAssistant):
             else:
                 # Check for collision with other vehicles before moving
                 if await self._check_for_collisions():
-                    self.wait_time += 1
-                    response_message = f"Cannot move due to potential collision. Wait time: {self.wait_time} sec."
+                    self.current_wait += 1
+                    response_message = f"Cannot move due to potential collision. Wait time: {self.current_wait} sec."
                 else:
                     # Decide whether to continue on current road or make a turn
                     if self.is_turning:
@@ -167,8 +167,8 @@ class VehicleAssistant(MyAssistant):
                             
                             # Check if target road has capacity
                             if not await self._check_road_capacity(next_road_idx):
-                                self.wait_time += 1
-                                response_message = f"Cannot turn onto road {next_road_idx} - at capacity. Wait time: {self.wait_time} sec."
+                                self.current_wait += 1
+                                response_message = f"Cannot turn onto road {next_road_idx} - at capacity. Wait time: {self.current_wait} sec."
                             else:
                                 # Start turning
                                 self.is_turning = True
@@ -346,17 +346,17 @@ class VehicleAssistant(MyAssistant):
         # Check if we're at an intersection that might have a traffic light or crossing
         if await self._check_for_obstacles(self.intersection_point):
             self.current_wait += 1
-            return f"Waiting at intersection due to red light or occupied crossing. Wait time: {self.wait_time}"
+            return f"Waiting at intersection due to red light or occupied crossing. Wait time: {self.current_wait}"
 
         # Check for other vehicles at intersection (collision avoidance)
         if await self._check_for_collisions():
             self.current_wait += 1
-            return f"Waiting at intersection due to other vehicles. Wait time: {self.wait_time}"
+            return f"Waiting at intersection due to other vehicles. Wait time: {self.current_wait}"
 
         # Check if target road has capacity before completing turn
         if not await self._check_road_capacity(self.next_road_idx):
             self.current_wait += 1
-            return f"Waiting to turn - target road at capacity. Wait time: {self.wait_time}"
+            return f"Waiting to turn - target road at capacity. Wait time: {self.current_wait}"
 
         # Vehicle moves, append the time in the list and reset the counter
         if self.current_wait > 0:
@@ -396,15 +396,16 @@ class VehicleAssistant(MyAssistant):
         
         # Update position along road
         self.movement_progress += self.movement_step
+
+        if self.current_wait > 0:
+            self.wait_times.append(self.current_wait) 
+            self.current_wait = 0
         
         # If we've reached the end of this road segment
         if self.movement_progress >= 1.0:
             self.current_position = next_road_idx
             self.route.append(self.current_position)
             self.movement_progress = 0.0
-            if self.current_wait > 0:
-                self.wait_times.append(self.current_wait) 
-            self.current_wait = 0
             msg = f"Vehicle moved to road segment {self.current_position}"
         else:
             msg = f"Vehicle moving along road segment {self.current_position} ({self.movement_progress:.1f})"
