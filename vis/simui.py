@@ -144,9 +144,9 @@ class VehicleObject(MapObject):
                 elif self.agent.parked:
                     color = "purple"
                 else:
-                    color = self.color_cycle[self.agent.wait_time % len(self.color_cycle)]
+                    color = self.color_cycle[sum(self.agent.wait_times) % len(self.color_cycle)]
             else:
-                color = self.color_cycle[self.agent.wait_time % len(self.color_cycle)]
+                color = self.color_cycle[sum(self.agent.wait_times) % len(self.color_cycle)]
             
             # Draw a more visible vehicle
             canvas.create_rectangle(position_x - 15, position_y - 15, 

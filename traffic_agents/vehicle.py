@@ -381,8 +381,8 @@ class VehicleAssistant(MyAssistant):
             
         # Check for obstacles like traffic lights or pedestrian crossings
         if await self._check_for_obstacles(current_xy):
-            self.wait_time += 1
-            return f"Waiting at position {self.current_position} due to red light or occupied crossing. Wait time: {self.wait_time} sec."
+            self.current_wait += 1
+            return f"Waiting at position {self.current_position} due to red light or occupied crossing. Wait time: {self.current_wait} sec."
             
         # If we're going to advance to the next road segment, check its capacity
         next_road_idx = self.current_position + 1
@@ -391,8 +391,8 @@ class VehicleAssistant(MyAssistant):
                 next_road_idx = 0  # Loop back to the first road
                 
             if not await self._check_road_capacity(next_road_idx):
-                self.wait_time += 1
-                return f"Cannot advance to next road segment - at capacity. Wait time: {self.wait_time} sec."
+                self.current_wait += 1
+                return f"Cannot advance to next road segment - at capacity. Wait time: {self.current_wait} sec."
         
         # Update position along road
         self.movement_progress += self.movement_step
@@ -402,7 +402,9 @@ class VehicleAssistant(MyAssistant):
             self.current_position = next_road_idx
             self.route.append(self.current_position)
             self.movement_progress = 0.0
-            self.wait_time = 0
+            if self.current_wait > 0:
+                self.wait_times.append(self.current_wait) 
+            self.current_wait = 0
             msg = f"Vehicle moved to road segment {self.current_position}"
         else:
             msg = f"Vehicle moving along road segment {self.current_position} ({self.movement_progress:.1f})"
