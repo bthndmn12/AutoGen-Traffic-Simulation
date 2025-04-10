@@ -1,42 +1,123 @@
 {
-    "vehicles": [
-      { "id": "vehicle_1", "x": 100, "y": 400 }
-    ],
-    "traffic_lights": [
-      { "id": "traffic_light_1", "x": 100, "y": 0 },
-      { "id": "traffic_light_2", "x": 600, "y": 0 },
-      { "id": "traffic_light_3", "x": 100, "y": 400 },
-      { "id": "traffic_light_4", "x": 600, "y": 400 },
-      { "id": "traffic_light_5", "x": 300, "y": 200 },
-      { "id": "traffic_light_6", "x": 600, "y": 300 }
-    ],
-    "crossings": [
-      { "id": "crossing_1", "x": 100, "y": 100 },
-      { "id": "crossing_2", "x": 200, "y": 100 },
-      { "id": "crossing_3", "x": 300, "y": 100 },
-      { "id": "crossing_4", "x": 100, "y": 200 },
-      { "id": "crossing_5", "x": 300, "y": 200 },
-      { "id": "crossing_6", "x": 500, "y": 200 },
-      { "id": "crossing_7", "x": 200, "y": 300 },
-      { "id": "crossing_8", "x": 300, "y": 300 },
-      { "id": "crossing_9", "x": 400, "y": 300 }
-    ],
-    "parking_areas": [
-      { "id": "street_parking_1", "x": 150, "y": 50, "capacity": 3, "parking_time": 2, "exit_time": 1, "type": "street" },
-      { "id": "street_parking_2", "x": 250, "y": 50, "capacity": 2, "parking_time": 2, "exit_time": 1, "type": "street" },
-      { "id": "street_parking_3", "x": 350, "y": 150, "capacity": 4, "parking_time": 2, "exit_time": 1, "type": "street" },
-      { "id": "parking_building", "x": 450, "y": 350, "capacity": 10, "parking_time": 3, "exit_time": 2, "type": "building" }
-    ],
-    "roads": [
-      { "id": "road_0", "x1": 0, "y1": 100, "x2": 700, "y2": 100, "capacity": 2 },
-      { "id": "road_1", "x1": 0, "y1": 200, "x2": 700, "y2": 200, "capacity": 3 },
-      { "id": "road_2", "x1": 0, "y1": 300, "x2": 700, "y2": 300, "capacity": 2 },
-      { "id": "road_3", "x1": 0, "y1": 400, "x2": 700, "y2": 400, "capacity": 3 },
-      { "id": "road_4", "x1": 100, "y1": 0, "x2": 100, "y2": 500, "capacity": 2 },
-      { "id": "road_5", "x1": 200, "y1": 0, "x2": 200, "y2": 500, "capacity": 2 },
-      { "id": "road_6", "x1": 300, "y1": 0, "x2": 300, "y2": 500, "capacity": 2 },
-      { "id": "road_7", "x1": 400, "y1": 0, "x2": 400, "y2": 500, "capacity": 2 },
-      { "id": "road_8", "x1": 500, "y1": 0, "x2": 500, "y2": 500, "capacity": 2 },
-      { "id": "road_9", "x1": 600, "y1": 0, "x2": 600, "y2": 500, "capacity": 2 }
-    ]
-  }
+  "vehicles": [
+    { "id": "vehicle_1", "x": 50, "y": 50, "spawn": true },
+    { "id": "vehicle_2", "x": 750, "y": 450, "spawn": true },
+    { "id": "vehicle_3", "x": 450, "y": 50, "spawn": true }
+  ],
+  "traffic_lights": [
+    { "id": "traffic_light_left_top", "x": 50, "y": 50 },
+    { "id": "traffic_light_left_bottom", "x": 50, "y": 450 },
+    { "id": "traffic_light_right_bottom", "x": 750, "y": 450 },
+    { "id": "traffic_light_right_top", "x": 750, "y": 50 },
+    { "id": "traffic_light_top_mid", "x": 350, "y": 50 },
+    { "id": "traffic_light_bottom_mid", "x": 350, "y": 450 },
+    { "id": "traffic_light_mid_left", "x": 250, "y": 250 },
+    { "id": "traffic_light_mid_right", "x": 450, "y": 250 }
+  ],
+  "crossings": [
+    { "id": "crossing_left_top", "x": 50, "y": 100 },
+    { "id": "crossing_left_mid", "x": 50, "y": 250 },
+    { "id": "crossing_left_bottom", "x": 50, "y": 400 },
+    { "id": "crossing_right_top", "x": 750, "y": 100 },
+    { "id": "crossing_right_mid", "x": 750, "y": 250 },
+    { "id": "crossing_right_bottom", "x": 750, "y": 400 },
+    { "id": "crossing_top_1", "x": 150, "y": 50 },
+    { "id": "crossing_top_2", "x": 250, "y": 50 },
+    { "id": "crossing_top_3", "x": 450, "y": 50 },
+    { "id": "crossing_top_4", "x": 650, "y": 50 },
+    { "id": "crossing_mid_1", "x": 150, "y": 250 },
+    { "id": "crossing_mid_2", "x": 250, "y": 250 },
+    { "id": "crossing_mid_3", "x": 450, "y": 250 },
+    { "id": "crossing_mid_4", "x": 650, "y": 250 },
+    { "id": "crossing_bottom_1", "x": 150, "y": 450 },
+    { "id": "crossing_bottom_2", "x": 250, "y": 450 },
+    { "id": "crossing_bottom_3", "x": 450, "y": 450 },
+    { "id": "crossing_bottom_4", "x": 650, "y": 450 }
+  ],
+  "parking_areas": [
+    { "id": "middle_road_parking", "x": 375, "y": 200, "capacity": 5, "parking_time": 3, "exit_time": 2, "type": "building" }
+  ],
+  "roads": [
+    { 
+      "id": "left_vertical_road", 
+      "x1": 50, "y1": 0, "x2": 50, "y2": 500, 
+      "capacity": 2, 
+      "color": "gray",
+      "one_way": true,
+      "is_spawn_point": true,
+      "is_despawn_point": true,
+      "connections": ["top_horizontal_road", "middle_horizontal_road", "bottom_horizontal_road"]
+    },
+    { 
+      "id": "right_vertical_road", 
+      "x1": 750, "y1": 500, "x2": 750, "y2": 0, 
+      "capacity": 2, 
+      "color": "gray",
+      "one_way": true,
+      "is_spawn_point": true,
+      "is_despawn_point": true,
+      "connections": ["top_horizontal_road", "middle_horizontal_road", "bottom_horizontal_road"] 
+    },
+    { 
+      "id": "top_horizontal_road", 
+      "x1": 750, "y1": 50, "x2": 0, "y2": 50, 
+      "capacity": 2, 
+      "color": "gray",
+      "one_way": true,
+      "is_spawn_point": false,
+      "is_despawn_point": false,
+      "connections": ["left_vertical_road", "middle_vertical_left", "right_vertical_road"] 
+    },
+    { 
+      "id": "middle_horizontal_road", 
+      "x1": 0, "y1": 250, "x2": 750, "y2": 250, 
+      "capacity": 2, 
+      "color": "gray",
+      "one_way": true,
+      "is_spawn_point": false,
+      "is_despawn_point": false,
+      "connections": ["left_vertical_road", "middle_vertical_left", "middle_vertical_right", "right_vertical_road"] 
+    },
+    { 
+      "id": "bottom_horizontal_road", 
+      "x1": 0, "y1": 450, "x2": 750, "y2": 450, 
+      "capacity": 2, 
+      "color": "gray",
+      "one_way": true,
+      "is_spawn_point": false,
+      "is_despawn_point": true,
+      "connections": ["left_vertical_road", "middle_vertical_right", "right_vertical_road"] 
+    },
+    { 
+      "id": "middle_vertical_left", 
+      "x1": 250, "y1": 450, "x2": 250, "y2": 50, 
+      "capacity": 2, 
+      "color": "gray",
+      "one_way": true,
+      "is_spawn_point": false,
+      "is_despawn_point": false,
+      "connections": ["top_horizontal_road", "middle_horizontal_road"] 
+    },
+    { 
+      "id": "middle_vertical_right", 
+      "x1": 450, "y1": 50, "x2": 450, "y2": 450, 
+      "capacity": 2, 
+      "color": "gray",
+      "one_way": true,
+      "is_spawn_point": true,
+      "is_despawn_point": true,
+      "connections": ["middle_horizontal_road", "bottom_horizontal_road"] 
+    }
+  ],
+  "spawn_points": [
+    { "id": "spawn_left", "road_id": "left_vertical_road", "x": 50, "y": 10 },
+    { "id": "spawn_right", "road_id": "right_vertical_road", "x": 750, "y": 490 },
+    { "id": "spawn_middle", "road_id": "middle_vertical_right", "x": 450, "y": 50 }
+  ],
+  "despawn_points": [
+    { "id": "despawn_left", "road_id": "left_vertical_road", "x": 50, "y": 490 },
+    { "id": "despawn_right", "road_id": "right_vertical_road", "x": 750, "y": 10 },
+    { "id": "despawn_bottom", "road_id": "bottom_horizontal_road", "x": 10, "y": 450 },
+    { "id": "despawn_middle_right", "road_id": "middle_vertical_right", "x": 450, "y": 450 }
+  ]
+}
