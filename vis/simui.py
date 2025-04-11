@@ -673,6 +673,7 @@ class TrafficSimulationVisualizer:
         self.left_info_text.config(state="disabled") # Disable writing
 
         # Update Right Panel (Infrastructure)
+        current_yview = self.right_info_text.yview()
         self.right_info_text.config(state="normal") # Enable writing
         self.right_info_text.delete('1.0', tk.END) # Clear previous content
 
@@ -692,6 +693,7 @@ class TrafficSimulationVisualizer:
         if not any([road_lines, parking_lines, light_lines, crossing_lines]):
              self.right_info_text.insert(tk.END, "(No infrastructure data)")
 
+        self.right_info_text.yview_moveto(current_yview[0])
         self.right_info_text.config(state="disabled") # Disable writing
 
 
