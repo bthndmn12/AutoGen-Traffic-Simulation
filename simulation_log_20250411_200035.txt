@@ -1,0 +1,400 @@
+Using basic traffic scenario without parking areas
+Added object: RoadObject
+Added object: RoadObject
+Added object: RoadObject
+Added object: RoadObject
+Added object: RoadObject
+Added object: RoadObject
+Added object: RoadObject
+Found 3 valid spawn points: ['spawn_left', 'spawn_right', 'spawn_middle']
+Vehicle vehicle_1 spawning at spawn_left on road left_vertical_road (index: 0)
+vehicle_1: Initialized at position (50, 10) on road index 0
+vehicle_1: Starting on road left_vertical_road
+Added object: vehicle_1
+Vehicle vehicle_2 spawning at spawn_right on road right_vertical_road (index: 1)
+vehicle_2: Initialized at position (750, 490) on road index 1
+vehicle_2: Starting on road right_vertical_road
+Added object: vehicle_2
+Vehicle vehicle_3 spawning at spawn_middle on road middle_vertical_right (index: 6)
+vehicle_3: Initialized at position (450, 50) on road index 6
+vehicle_3: Starting on road middle_vertical_right
+Added object: vehicle_3
+Added object: traffic_light_left_top
+Added object: traffic_light_left_bottom
+Added object: traffic_light_right_bottom
+Added object: traffic_light_right_top
+Added object: traffic_light_top_mid
+Added object: traffic_light_bottom_mid
+Added object: traffic_light_mid_left
+Added object: traffic_light_mid_right
+Added object: crossing_left_top
+Added object: crossing_left_mid
+Added object: crossing_left_bottom
+Added object: crossing_right_top
+Added object: crossing_right_mid
+Added object: crossing_right_bottom
+Added object: crossing_top_1
+Added object: crossing_top_2
+Added object: crossing_top_3
+Added object: crossing_top_4
+Added object: crossing_mid_1
+Added object: crossing_mid_2
+Added object: crossing_mid_3
+Added object: crossing_mid_4
+Added object: crossing_bottom_1
+Added object: crossing_bottom_2
+Added object: crossing_bottom_3
+Added object: crossing_bottom_4
+Simulation step 0/10
+Map centered at offset: (75.0, 75.0)
+vehicle_1 (Vehicle) received message: move
+traffic_light_left_top (Traffic Light) received message: request_state
+traffic_light_left_top responds with: RED
+vehicle_1 stopped at red light traffic_light_left_top (distance: 40.0)
+vehicle_1: Skipping lookahead check; movement_progress=0.00
+vehicle_1 (Vehicle) responds with: Waiting due to obstacles. Wait time: 1 sec.
+Vehicle vehicle_1 moved to coordinates (50, 10)
+vehicle_2 (Vehicle) received message: move
+traffic_light_right_bottom (Traffic Light) received message: request_state
+traffic_light_right_bottom responds with: RED
+vehicle_2 stopped at red light traffic_light_right_bottom (distance: 40.0)
+vehicle_2: Skipping lookahead check; movement_progress=0.00
+vehicle_2 (Vehicle) responds with: Waiting due to obstacles. Wait time: 1 sec.
+Vehicle vehicle_2 moved to coordinates (750, 490)
+vehicle_3 (Vehicle) received message: move
+crossing_top_3 (Pedestrian Crossing) received message: request_state
+crossing_top_3 (Pedestrian Crossing) responds with: free queue=0
+vehicle_3: Skipping lookahead check; movement_progress=0.00
+vehicle_3 (Vehicle) responds with: Vehicle moving along road segment 6 (0.1)
+Vehicle vehicle_3 moved to coordinates (450.0, 70.0)
+crossing_right_top: 3 pedestrians arrived. Queue now: 3
+crossing_right_top Pedestrian Crossing is now occupied for 3 seconds. Queue: 2
+crossing_left_top: 2 pedestrians arrived. Queue now: 2
+crossing_left_top Pedestrian Crossing is now occupied for 3 seconds. Queue: 1
+crossing_right_mid: 1 pedestrians arrived. Queue now: 1
+crossing_right_mid Pedestrian Crossing is now occupied for 3 seconds. Queue: 0
+crossing_right_bottom: 3 pedestrians arrived. Queue now: 3
+crossing_right_bottom Pedestrian Crossing is now occupied for 3 seconds. Queue: 2
+crossing_mid_4: 1 pedestrians arrived. Queue now: 1
+crossing_mid_4 Pedestrian Crossing is now occupied for 3 seconds. Queue: 0
+crossing_bottom_2: 2 pedestrians arrived. Queue now: 2
+crossing_bottom_2 Pedestrian Crossing is now occupied for 3 seconds. Queue: 1
+Simulation step 1/10
+vehicle_1 (Vehicle) received message: move
+traffic_light_left_top (Traffic Light) received message: request_state
+traffic_light_left_top responds with: RED
+vehicle_1 stopped at red light traffic_light_left_top (distance: 40.0)
+vehicle_1: Skipping lookahead check; movement_progress=0.00
+vehicle_1 (Vehicle) responds with: Waiting due to obstacles. Wait time: 2 sec.
+Vehicle vehicle_1 moved to coordinates (50, 10)
+vehicle_2 (Vehicle) received message: move
+traffic_light_right_bottom (Traffic Light) received message: request_state
+traffic_light_right_bottom responds with: RED
+vehicle_2 stopped at red light traffic_light_right_bottom (distance: 40.0)
+vehicle_2: Skipping lookahead check; movement_progress=0.00
+vehicle_2 (Vehicle) responds with: Waiting due to obstacles. Wait time: 2 sec.
+Vehicle vehicle_2 moved to coordinates (750, 490)
+vehicle_3 (Vehicle) received message: move
+crossing_top_3 (Pedestrian Crossing) received message: request_state
+crossing_top_3 (Pedestrian Crossing) responds with: free queue=0
+vehicle_3: Skipping lookahead check; movement_progress=0.05
+vehicle_3 (Vehicle) responds with: Vehicle moving along road segment 6 (0.1)
+Vehicle vehicle_3 moved to coordinates (450.0, 90.0)
+crossing_left_mid: 2 pedestrians arrived. Queue now: 2
+crossing_left_mid Pedestrian Crossing is now occupied for 3 seconds. Queue: 1
+crossing_top_2: 1 pedestrians arrived. Queue now: 1
+crossing_top_2 Pedestrian Crossing is now occupied for 3 seconds. Queue: 0
+crossing_mid_2: 2 pedestrians arrived. Queue now: 2
+crossing_mid_2 Pedestrian Crossing is now occupied for 3 seconds. Queue: 1
+traffic_light_left_top changed to GREEN
+traffic_light_left_bottom changed to GREEN
+traffic_light_right_bottom changed to GREEN
+traffic_light_right_top changed to GREEN
+traffic_light_mid_left changed to GREEN
+traffic_light_mid_right changed to GREEN
+traffic_light_top_mid changed to RED
+traffic_light_bottom_mid changed to RED
+Simulation step 2/10
+vehicle_1 (Vehicle) received message: move
+traffic_light_left_top (Traffic Light) received message: request_state
+traffic_light_left_top responds with: GREEN
+vehicle_1: Traffic light traffic_light_left_top is not red (distance: 40.0)
+vehicle_1: Skipping lookahead check; movement_progress=0.00
+vehicle_1 (Vehicle) responds with: Vehicle moving along road segment 0 (0.1)
+Vehicle vehicle_1 moved to coordinates (50.0, 25.0)
+vehicle_2 (Vehicle) received message: move
+traffic_light_right_bottom (Traffic Light) received message: request_state
+traffic_light_right_bottom responds with: GREEN
+vehicle_2: Traffic light traffic_light_right_bottom is not red (distance: 40.0)
+vehicle_2: Skipping lookahead check; movement_progress=0.00
+vehicle_2 (Vehicle) responds with: Vehicle moving along road segment 1 (0.1)
+Vehicle vehicle_2 moved to coordinates (750.0, 475.0)
+vehicle_3 (Vehicle) received message: move
+crossing_top_3 (Pedestrian Crossing) received message: request_state
+crossing_top_3 (Pedestrian Crossing) responds with: free queue=0
+vehicle_3: Skipping lookahead check; movement_progress=0.10
+vehicle_3 (Vehicle) responds with: Vehicle moving along road segment 6 (0.2)
+Vehicle vehicle_3 moved to coordinates (450.0, 110.0)
+crossing_bottom_1: 2 pedestrians arrived. Queue now: 2
+crossing_bottom_1 Pedestrian Crossing is now occupied for 3 seconds. Queue: 1
+crossing_left_top: 1 pedestrians arrived. Queue now: 2
+crossing_top_3: 3 pedestrians arrived. Queue now: 3
+crossing_top_3 Pedestrian Crossing is now occupied for 3 seconds. Queue: 2
+crossing_right_mid: 1 pedestrians arrived. Queue now: 1
+Simulation step 3/10
+vehicle_1 (Vehicle) received message: move
+traffic_light_left_top (Traffic Light) received message: request_state
+traffic_light_left_top responds with: GREEN
+vehicle_1: Traffic light traffic_light_left_top is not red (distance: 25.0)
+vehicle_1: Skipping lookahead check; movement_progress=0.05
+vehicle_1 (Vehicle) responds with: Vehicle moving along road segment 0 (0.1)
+Vehicle vehicle_1 moved to coordinates (50.0, 50.0)
+vehicle_2 (Vehicle) received message: move
+traffic_light_right_bottom (Traffic Light) received message: request_state
+traffic_light_right_bottom responds with: GREEN
+vehicle_2: Traffic light traffic_light_right_bottom is not red (distance: 25.0)
+vehicle_2: Skipping lookahead check; movement_progress=0.05
+vehicle_2 (Vehicle) responds with: Vehicle moving along road segment 1 (0.1)
+Vehicle vehicle_2 moved to coordinates (750.0, 450.0)
+vehicle_3 (Vehicle) received message: move
+vehicle_3: Skipping lookahead check; movement_progress=0.15
+vehicle_3 (Vehicle) responds with: Vehicle moving along road segment 6 (0.2)
+Vehicle vehicle_3 moved to coordinates (450.0, 130.0)
+crossing_mid_1: 3 pedestrians arrived. Queue now: 3
+crossing_mid_1 Pedestrian Crossing is now occupied for 3 seconds. Queue: 2
+crossing_left_mid: 3 pedestrians arrived. Queue now: 4
+crossing_left_bottom: 1 pedestrians arrived. Queue now: 1
+crossing_left_bottom Pedestrian Crossing is now occupied for 3 seconds. Queue: 0
+crossing_right_bottom: 2 pedestrians arrived. Queue now: 4
+Simulation step 4/10
+vehicle_1 (Vehicle) received message: move
+traffic_light_left_top (Traffic Light) received message: request_state
+traffic_light_left_top responds with: GREEN
+vehicle_1: Traffic light traffic_light_left_top is not red (distance: 0.0)
+crossing_left_top (Pedestrian Crossing) received message: request_state
+crossing_left_top (Pedestrian Crossing) responds with: occupied queue=2
+vehicle_1 stopped at occupied crossing crossing_left_top (distance: 50.0)
+vehicle_1: Skipping lookahead check; movement_progress=0.10
+vehicle_1 (Vehicle) responds with: Waiting due to obstacles. Wait time: 3 sec.
+Vehicle vehicle_1 moved to coordinates (50.0, 50.0)
+vehicle_2 (Vehicle) received message: move
+traffic_light_right_bottom (Traffic Light) received message: request_state
+traffic_light_right_bottom responds with: GREEN
+vehicle_2: Traffic light traffic_light_right_bottom is not red (distance: 0.0)
+crossing_right_bottom (Pedestrian Crossing) received message: request_state
+crossing_right_bottom (Pedestrian Crossing) responds with: occupied queue=4
+vehicle_2 stopped at occupied crossing crossing_right_bottom (distance: 50.0)
+vehicle_2: Skipping lookahead check; movement_progress=0.10
+vehicle_2 (Vehicle) responds with: Waiting due to obstacles. Wait time: 3 sec.
+Vehicle vehicle_2 moved to coordinates (750.0, 450.0)
+vehicle_3 (Vehicle) received message: move
+crossing_top_2 (Pedestrian Crossing) received message: request_state
+crossing_top_2 (Pedestrian Crossing) responds with: occupied queue=0
+vehicle_3 stopped at occupied crossing crossing_top_2 (distance: 15.0)
+vehicle_3: Lookahead check at midpoint (250.0, 65.0), result: True
+vehicle_3 (Vehicle) responds with: Waiting due to obstacles. Wait time: 1 sec.
+Vehicle vehicle_3 moved to coordinates (450.0, 130.0)
+traffic_light_left_top changed to RED
+traffic_light_left_bottom changed to RED
+traffic_light_right_bottom changed to RED
+traffic_light_right_top changed to RED
+traffic_light_mid_left changed to RED
+traffic_light_mid_right changed to RED
+traffic_light_top_mid changed to GREEN
+traffic_light_bottom_mid changed to GREEN
+crossing_left_bottom: 2 pedestrians arrived. Queue now: 2
+crossing_mid_1: 1 pedestrians arrived. Queue now: 3
+crossing_mid_4: 2 pedestrians arrived. Queue now: 2
+crossing_mid_4 Pedestrian Crossing is now free. Queue remaining: 2
+crossing_right_mid Pedestrian Crossing is now free. Queue remaining: 1
+crossing_bottom_3: 3 pedestrians arrived. Queue now: 3
+crossing_bottom_3 Pedestrian Crossing is now occupied for 3 seconds. Queue: 2
+crossing_bottom_1: 2 pedestrians arrived. Queue now: 3
+crossing_right_bottom: 2 pedestrians arrived. Queue now: 6
+crossing_right_bottom Pedestrian Crossing is now free. Queue remaining: 6
+crossing_right_top: 2 pedestrians arrived. Queue now: 4
+crossing_right_top Pedestrian Crossing is now free. Queue remaining: 4
+crossing_top_1: 1 pedestrians arrived. Queue now: 1
+crossing_top_1 Pedestrian Crossing is now occupied for 3 seconds. Queue: 0
+Simulation step 5/10
+vehicle_1 (Vehicle) received message: move
+traffic_light_left_top (Traffic Light) received message: request_state
+traffic_light_left_top responds with: RED
+vehicle_1 stopped at red light traffic_light_left_top (distance: 0.0)
+vehicle_1: Skipping lookahead check; movement_progress=0.10
+vehicle_1 (Vehicle) responds with: Waiting due to obstacles. Wait time: 4 sec.
+Vehicle vehicle_1 moved to coordinates (50.0, 50.0)
+vehicle_2 (Vehicle) received message: move
+traffic_light_right_bottom (Traffic Light) received message: request_state
+traffic_light_right_bottom responds with: RED
+vehicle_2 stopped at red light traffic_light_right_bottom (distance: 0.0)
+vehicle_2: Skipping lookahead check; movement_progress=0.10
+vehicle_2 (Vehicle) responds with: Waiting due to obstacles. Wait time: 4 sec.
+Vehicle vehicle_2 moved to coordinates (750.0, 450.0)
+vehicle_3 (Vehicle) received message: move
+crossing_top_2 (Pedestrian Crossing) received message: request_state
+crossing_top_2 (Pedestrian Crossing) responds with: occupied queue=0
+vehicle_3 stopped at occupied crossing crossing_top_2 (distance: 15.0)
+vehicle_3: Lookahead check at midpoint (250.0, 65.0), result: True
+vehicle_3 (Vehicle) responds with: Waiting due to obstacles. Wait time: 2 sec.
+Vehicle vehicle_3 moved to coordinates (450.0, 130.0)
+crossing_left_bottom: 3 pedestrians arrived. Queue now: 5
+crossing_top_2: 3 pedestrians arrived. Queue now: 3
+crossing_bottom_4: 1 pedestrians arrived. Queue now: 1
+crossing_bottom_4 Pedestrian Crossing is now occupied for 3 seconds. Queue: 0
+crossing_mid_2 Pedestrian Crossing is now free. Queue remaining: 1
+crossing_left_top Pedestrian Crossing is now free. Queue remaining: 2
+crossing_top_3: 1 pedestrians arrived. Queue now: 3
+crossing_mid_4 Pedestrian Crossing is now occupied for 3 seconds. Queue: 1
+crossing_right_top Pedestrian Crossing is now occupied for 3 seconds. Queue: 3
+crossing_right_bottom Pedestrian Crossing is now occupied for 3 seconds. Queue: 5
+Simulation step 6/10
+vehicle_1 (Vehicle) received message: move
+traffic_light_left_top (Traffic Light) received message: request_state
+traffic_light_left_top responds with: RED
+vehicle_1 stopped at red light traffic_light_left_top (distance: 0.0)
+vehicle_1: Skipping lookahead check; movement_progress=0.10
+vehicle_1 (Vehicle) responds with: Waiting due to obstacles. Wait time: 5 sec.
+Vehicle vehicle_1 moved to coordinates (50.0, 50.0)
+vehicle_2 (Vehicle) received message: move
+traffic_light_right_bottom (Traffic Light) received message: request_state
+traffic_light_right_bottom responds with: RED
+vehicle_2 stopped at red light traffic_light_right_bottom (distance: 0.0)
+vehicle_2: Skipping lookahead check; movement_progress=0.10
+vehicle_2 (Vehicle) responds with: Waiting due to obstacles. Wait time: 5 sec.
+Vehicle vehicle_2 moved to coordinates (750.0, 450.0)
+vehicle_3 (Vehicle) received message: move
+crossing_top_2 (Pedestrian Crossing) received message: request_state
+crossing_top_2 (Pedestrian Crossing) responds with: occupied queue=3
+vehicle_3 stopped at occupied crossing crossing_top_2 (distance: 15.0)
+vehicle_3: Lookahead check at midpoint (250.0, 65.0), result: True
+vehicle_3 (Vehicle) responds with: Waiting due to obstacles. Wait time: 3 sec.
+Vehicle vehicle_3 moved to coordinates (450.0, 130.0)
+traffic_light_left_top changed to GREEN
+traffic_light_left_bottom changed to GREEN
+traffic_light_right_bottom changed to GREEN
+traffic_light_right_top changed to GREEN
+traffic_light_mid_left changed to GREEN
+traffic_light_mid_right changed to GREEN
+traffic_light_top_mid changed to RED
+traffic_light_bottom_mid changed to RED
+crossing_top_2: 3 pedestrians arrived. Queue now: 6
+crossing_top_2 Pedestrian Crossing is now free. Queue remaining: 6
+crossing_left_bottom Pedestrian Crossing is now free. Queue remaining: 5
+crossing_right_mid Pedestrian Crossing is now occupied for 3 seconds. Queue: 0
+crossing_right_bottom: 3 pedestrians arrived. Queue now: 8
+crossing_mid_3: 1 pedestrians arrived. Queue now: 1
+crossing_mid_3 Pedestrian Crossing is now occupied for 3 seconds. Queue: 0
+crossing_bottom_3: 2 pedestrians arrived. Queue now: 4
+crossing_bottom_2: 2 pedestrians arrived. Queue now: 3
+crossing_bottom_2 Pedestrian Crossing is now free. Queue remaining: 3
+Simulation step 7/10
+vehicle_1 (Vehicle) received message: move
+traffic_light_left_top (Traffic Light) received message: request_state
+traffic_light_left_top responds with: GREEN
+vehicle_1: Traffic light traffic_light_left_top is not red (distance: 0.0)
+crossing_left_top (Pedestrian Crossing) received message: request_state
+crossing_left_top (Pedestrian Crossing) responds with: free queue=2
+vehicle_1: Skipping lookahead check; movement_progress=0.10
+vehicle_1 (Vehicle) responds with: Vehicle moving along road segment 0 (0.2)
+Vehicle vehicle_1 moved to coordinates (50.0, 75.00000000000001)
+vehicle_2 (Vehicle) received message: move
+traffic_light_right_bottom (Traffic Light) received message: request_state
+traffic_light_right_bottom responds with: GREEN
+vehicle_2: Traffic light traffic_light_right_bottom is not red (distance: 0.0)
+crossing_right_bottom (Pedestrian Crossing) received message: request_state
+crossing_right_bottom (Pedestrian Crossing) responds with: occupied queue=8
+vehicle_2 stopped at occupied crossing crossing_right_bottom (distance: 50.0)
+vehicle_2: Skipping lookahead check; movement_progress=0.10
+vehicle_2 (Vehicle) responds with: Waiting due to obstacles. Wait time: 6 sec.
+Vehicle vehicle_2 moved to coordinates (750.0, 450.0)
+vehicle_3 (Vehicle) received message: move
+crossing_top_2 (Pedestrian Crossing) received message: request_state
+crossing_top_2 (Pedestrian Crossing) responds with: free queue=6
+vehicle_3: Lookahead check at midpoint (250.0, 65.0), result: False
+vehicle_3 (Vehicle) responds with: Vehicle moving along road segment 6 (0.2)
+Vehicle vehicle_3 moved to coordinates (450.0, 150.0)
+crossing_left_mid Pedestrian Crossing is now free. Queue remaining: 4
+crossing_left_bottom Pedestrian Crossing is now occupied for 3 seconds. Queue: 4
+crossing_top_2 Pedestrian Crossing is now occupied for 3 seconds. Queue: 5
+crossing_top_3: 2 pedestrians arrived. Queue now: 5
+crossing_top_3 Pedestrian Crossing is now free. Queue remaining: 5
+crossing_mid_4: 1 pedestrians arrived. Queue now: 2
+crossing_left_top: 3 pedestrians arrived. Queue now: 5
+crossing_left_top Pedestrian Crossing is now occupied for 3 seconds. Queue: 4
+crossing_bottom_2 Pedestrian Crossing is now occupied for 3 seconds. Queue: 2
+crossing_mid_2 Pedestrian Crossing is now occupied for 3 seconds. Queue: 0
+Simulation step 8/10
+vehicle_1 (Vehicle) received message: move
+traffic_light_left_top (Traffic Light) received message: request_state
+traffic_light_left_top responds with: GREEN
+vehicle_1: Traffic light traffic_light_left_top is not red (distance: 25.0)
+crossing_left_top (Pedestrian Crossing) received message: request_state
+crossing_left_top (Pedestrian Crossing) responds with: occupied queue=4
+vehicle_1 stopped at occupied crossing crossing_left_top (distance: 25.0)
+vehicle_1: Skipping lookahead check; movement_progress=0.15
+vehicle_1 (Vehicle) responds with: Waiting due to obstacles. Wait time: 6 sec.
+Vehicle vehicle_1 moved to coordinates (50.0, 75.00000000000001)
+vehicle_2 (Vehicle) received message: move
+traffic_light_right_bottom (Traffic Light) received message: request_state
+traffic_light_right_bottom responds with: GREEN
+vehicle_2: Traffic light traffic_light_right_bottom is not red (distance: 0.0)
+crossing_right_bottom (Pedestrian Crossing) received message: request_state
+crossing_right_bottom (Pedestrian Crossing) responds with: occupied queue=8
+vehicle_2 stopped at occupied crossing crossing_right_bottom (distance: 50.0)
+vehicle_2: Skipping lookahead check; movement_progress=0.10
+vehicle_2 (Vehicle) responds with: Waiting due to obstacles. Wait time: 7 sec.
+Vehicle vehicle_2 moved to coordinates (750.0, 450.0)
+vehicle_3 (Vehicle) received message: move
+crossing_top_2 (Pedestrian Crossing) received message: request_state
+crossing_top_2 (Pedestrian Crossing) responds with: occupied queue=5
+vehicle_3 stopped at occupied crossing crossing_top_2 (distance: 25.0)
+vehicle_3: Lookahead check at midpoint (250.0, 75.0), result: True
+vehicle_3 (Vehicle) responds with: Waiting due to obstacles. Wait time: 4 sec.
+Vehicle vehicle_3 moved to coordinates (450.0, 150.0)
+traffic_light_left_top changed to RED
+traffic_light_left_bottom changed to RED
+traffic_light_right_bottom changed to RED
+traffic_light_right_top changed to RED
+traffic_light_mid_left changed to RED
+traffic_light_mid_right changed to RED
+traffic_light_top_mid changed to GREEN
+traffic_light_bottom_mid changed to GREEN
+crossing_mid_1 Pedestrian Crossing is now free. Queue remaining: 3
+crossing_left_mid: 2 pedestrians arrived. Queue now: 6
+crossing_left_mid Pedestrian Crossing is now occupied for 3 seconds. Queue: 5
+crossing_bottom_4: 1 pedestrians arrived. Queue now: 1
+crossing_bottom_3: 2 pedestrians arrived. Queue now: 6
+crossing_bottom_1 Pedestrian Crossing is now free. Queue remaining: 3
+crossing_right_bottom: 2 pedestrians arrived. Queue now: 10
+crossing_right_mid: 2 pedestrians arrived. Queue now: 2
+Simulation step 9/10
+vehicle_1 (Vehicle) received message: move
+traffic_light_left_top (Traffic Light) received message: request_state
+traffic_light_left_top responds with: RED
+vehicle_1 stopped at red light traffic_light_left_top (distance: 25.0)
+vehicle_1: Skipping lookahead check; movement_progress=0.15
+vehicle_1 (Vehicle) responds with: Waiting due to obstacles. Wait time: 7 sec.
+Vehicle vehicle_1 moved to coordinates (50.0, 75.00000000000001)
+vehicle_2 (Vehicle) received message: move
+traffic_light_right_bottom (Traffic Light) received message: request_state
+traffic_light_right_bottom responds with: RED
+vehicle_2 stopped at red light traffic_light_right_bottom (distance: 0.0)
+vehicle_2: Skipping lookahead check; movement_progress=0.10
+vehicle_2 (Vehicle) responds with: Waiting due to obstacles. Wait time: 8 sec.
+Vehicle vehicle_2 moved to coordinates (750.0, 450.0)
+vehicle_3 (Vehicle) received message: move
+crossing_top_2 (Pedestrian Crossing) received message: request_state
+crossing_top_2 (Pedestrian Crossing) responds with: occupied queue=5
+vehicle_3 stopped at occupied crossing crossing_top_2 (distance: 25.0)
+vehicle_3: Lookahead check at midpoint (250.0, 75.0), result: True
+vehicle_3 (Vehicle) responds with: Waiting due to obstacles. Wait time: 5 sec.
+Vehicle vehicle_3 moved to coordinates (450.0, 150.0)
+crossing_mid_1: 3 pedestrians arrived. Queue now: 6
+crossing_mid_1 Pedestrian Crossing is now occupied for 3 seconds. Queue: 5
+crossing_bottom_1 Pedestrian Crossing is now occupied for 3 seconds. Queue: 2
+crossing_top_1 Pedestrian Crossing is now free. Queue remaining: 0
+crossing_right_mid Pedestrian Crossing is now free. Queue remaining: 2
+crossing_top_3 Pedestrian Crossing is now occupied for 3 seconds. Queue: 4
+crossing_bottom_2: 1 pedestrians arrived. Queue now: 3
+crossing_mid_4: 3 pedestrians arrived. Queue now: 5

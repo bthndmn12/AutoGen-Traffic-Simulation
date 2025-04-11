@@ -162,11 +162,6 @@ class VehicleAssistant(MyAssistant):
         if current_position < len(self.roads) and len(self.roads[current_position]) >= 6:
             print(f"{self.name}: Starting on road {self.roads[current_position][5]}")
         
-        # Turning properties
-        self.next_turn_options = []   # Available turns at current position
-        self.is_turning = False
-        self.turn_options = {}        # All possible turns indexed by road position
-        
         # Road system properties
         self.road_connections = {}    # Valid connections between roads
         self.one_way_roads = set()    # Indices of one-way roads
@@ -188,12 +183,10 @@ class VehicleAssistant(MyAssistant):
         self.parking_cooldown = 0       # Cooldown before attempting to park again
         self.recent_parkings = []       # Recently used parking areas to avoid immediate re-entry
         
-        
-        # Initialize road system and turn options
-        # these 3 mfs killed the simulation
+        # Initialize road system
         self._process_road_properties()
-        # self._validate_spawn_point()  
-        # self._calculate_possible_turns()  
+        self._validate_spawn_point()  
+        self._calculate_possible_turns()  
 
     def _validate_spawn_point(self):
         """Ensure the vehicle spawns at a valid point on the road."""
@@ -239,7 +232,6 @@ class VehicleAssistant(MyAssistant):
 
     def _process_road_properties(self):
         super()._process_road_properties()
-        self._calculate_turns_at_intersections()
 
 
 
@@ -466,39 +458,8 @@ class VehicleAssistant(MyAssistant):
                     self.current_wait += 1
                     response_message = f"Cannot move due to potential collision. Wait time: {self.current_wait} sec."
                 else:
-                    if self.is_turning:
-                        response_message = await self._continue_turn()
-                    elif self.parking_cooldown <= 0 and await self._check_for_parking():
+                    if self.parking_cooldown <= 0 and await self._check_for_parking():
                         response_message = f"Vehicle found parking at {self.target_parking}"
-                    elif self.movement_progress >= 0.95 and self.current_position in self.turn_options:
-                        self.next_turn_options = self.turn_options[self.current_position]
-                        should_turn = random.random() < 0.6
-                        
-                        if should_turn and self.next_turn_options:
-                            turn_option = random.choice(self.next_turn_options)
-                            next_road_idx = turn_option[0]
-                            intersection_point = turn_option[1]
-                            
-                            if len(turn_option) > 2:
-                                self.current_road_dir = turn_option[2]
-                                self.target_road_dir = turn_option[3]
-                            
-                            print(f"{self.name} decided to turn onto road {next_road_idx} at {intersection_point}")
-                            
-                            if not await self._check_road_capacity(next_road_idx):
-                                self.current_wait += 1
-                                response_message = f"Cannot turn - target road at capacity. Wait: {self.current_wait} sec."
-                            elif next_road_idx >= len(self.roads):
-                                self.current_wait += 1
-                                response_message = f"Cannot turn - target road {next_road_idx} is invalid."
-                            else:
-                                self.is_turning = True
-                                self.next_road_idx = next_road_idx
-                                self.intersection_point = intersection_point
-                                response_message = f"Vehicle turning onto road {next_road_idx}"
-                        else:
-                            self.current_wait += 1
-                            response_message = f"Cannot turn - no valid turn options available."
                     else:
                         response_message = await self._move_forward()
 
@@ -543,7 +504,8 @@ class VehicleAssistant(MyAssistant):
             print(f"{self.name} (Vehicle) did not generate a response.")
 
     async def _check_for_collisions(self):
-       
+        """Simple collision detection without turn logic"""
+        # Basic collision detection
         return False
 
     async def _continue_turn(self):
@@ -568,100 +530,44 @@ class VehicleAssistant(MyAssistant):
         return f"Vehicle completed turn onto road {self.current_position} at ({self.x:.1f}, {self.y:.1f})"
 
     async def _move_forward(self):
+        """Move the vehicle forward along the current road segment"""
         current_xy = (self.x, self.y)
         next_xy = self.get_next_position()
         
         if not next_xy:
             return "No further road segment to follow."
             
-        key_intersections = [
-            # Left intersections
-            {"x": 50, "y": 50},   
-            {"x": 50, "y": 450},  
-            # Right intersections
-            {"x": 750, "y": 50},  
-            {"x": 750, "y": 450}, 
-            # Middle intersections
-            {"x": 250, "y": 250}, 
-            {"x": 450, "y": 250} 
-        ]
-        
-        is_at_key_intersection = False
-        for intersection in key_intersections:
-            if is_nearby((intersection["x"], intersection["y"]), current_xy, threshold=100):
-                is_at_key_intersection = True
-                break
-                
-        if (self.movement_progress >= 0.7 and self.current_position in self.turn_options) or is_at_key_intersection:
-            should_stop = False
-            for light in self.traffic_lights:
-                if is_nearby((light["x"], light["y"]), current_xy):
-                    light_id = AgentId(light["id"], "default")
-                    res = await self.runtime.send_message(
-                        MyMessageType(content="request_state", source=self.name), 
-                        light_id
-                    )
-                    if "red" in res.content.lower():
-                        print(f"{self.name} stopped at red light {light['id']}")
-                        should_stop = True
-                        break
-            
-            if should_stop:
-                self.current_wait += 1
-                return f"Waiting due to red light. Wait time: {self.current_wait} sec."
-            
-            if self.current_position in self.turn_options:
-                self.next_turn_options = self.turn_options[self.current_position]
-                if self.next_turn_options:
-                    should_turn = random.random() < 0.95
-                    if should_turn:
-                        turn_option = random.choice(self.next_turn_options)
-                        next_road_idx = turn_option[0]
-                        intersection_point = turn_option[1]
-                        
-                        if len(turn_option) > 2:
-                            self.current_road_dir = turn_option[2]
-                            self.target_road_dir = turn_option[3]
-                        
-                        # Force turn if we've been waiting too long
-                        if await self._check_road_capacity(next_road_idx) or self.current_wait > 5 or is_at_key_intersection:
-                            print(f"{self.name} turning onto road {next_road_idx} at {intersection_point}")
-                            self.is_turning = True
-                            self.next_road_idx = next_road_idx
-                            self.intersection_point = intersection_point
-                            self.movement_progress = 0.0
-                            return f"Vehicle turning onto road {next_road_idx} at {intersection_point}"
-                        else:
-                            self.current_wait += 1
-                            return f"Cannot turn - road at capacity. Wait time: {self.current_wait} sec."
-        
+        # Check for obstacles (traffic lights, crossings)
         if self.current_wait <= 8 and await self._check_for_obstacles(current_xy):
             self.current_wait += 1
             return f"Waiting due to obstacles. Wait time: {self.current_wait} sec."
         
+        # Check if vehicle should despawn
         if self.movement_progress >= 0.85 and self._check_if_near_despawn_point():
             print(f"{self.name} is despawning at the end of road {self.current_position}")
             return f"Vehicle {self.name} is leaving the simulation"
-            
-        if self.movement_progress + self.movement_step >= 1.0:
-            if self.current_position in self.turn_options:
-                return f"Vehicle is at an intersection, should turn."
         
+        # Check road capacity
         if await self._check_road_capacity(self.current_position + 1 if (self.current_position + 1 < len(self.roads)) else 0) or self.current_wait > 8:
             pass
         else:
             self.current_wait += 1
             return f"Cannot advance - next road at capacity. Wait time: {self.current_wait} sec."
         
+        # Move forward
         self.movement_progress += self.movement_step
         if self.movement_progress >= 1.0:
+            # Move to next road segment
             next_road_idx = self.current_position + 1 if (self.current_position + 1 < len(self.roads)) else 0
             self.current_position = next_road_idx
             self.route.append(self.current_position)
             self.movement_progress = 0.0
+            
+            # Reset wait counter if we've been waiting
             if self.current_wait > 0:
                 self.wait_times.append(self.current_wait) 
                 self.current_wait = 0
+                
             msg = f"Vehicle moved to road segment {self.current_position}"
         else:
             msg = f"Vehicle moving along road segment {self.current_position} ({self.movement_progress:.1f})"
@@ -716,13 +622,6 @@ class VehicleAssistant(MyAssistant):
                     return True
         
         for crossing in self.crossings:
-            if self.is_turning:
-                crossing_pos = (crossing["x"], crossing["y"])
-                intersection_pos = self.intersection_point
-                dist_to_intersection = math.sqrt((crossing_pos[0] - intersection_pos[0])**2 + (crossing_pos[1] - intersection_pos[1])**2)
-                if dist_to_intersection < 50:
-                    continue
-            
             if is_nearby((crossing["x"], crossing["y"]), (x, y)):
                 crossing_id = AgentId(crossing["id"], "default")
                 res = await self.runtime.send_message(
@@ -745,9 +644,7 @@ class VehicleAssistant(MyAssistant):
         return False
 
     def get_next_position(self):
-        if self.is_turning:
-            return self.intersection_point
-        elif self.current_position + 1 < len(self.roads):
+        if self.current_position + 1 < len(self.roads):
             return self.roads[self.current_position + 1][:2]
         elif len(self.roads) > 0:
             return self.roads[0][:2]
@@ -800,8 +697,6 @@ class VehicleAssistant(MyAssistant):
         if self.parking_cooldown > 0:
             return False
         if random.random() > self.parking_desire:
-            return False
-        if self.is_turning:
             return False
         
         for parking in self.parking_areas:
