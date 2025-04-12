@@ -56,6 +56,8 @@ class TrafficLightAssistant(MyAssistant):
         # Initialize group coordination if this is the first light
         if not TrafficLightAssistant.coordination_initialized:
             self.traffic_light_task = asyncio.create_task(self.coordinate_traffic_lights())
+
+            
             TrafficLightAssistant.coordination_initialized = True
         else:
             self.traffic_light_task = None
@@ -65,10 +67,6 @@ class TrafficLightAssistant(MyAssistant):
         while True:
             # Wait for the change time
             await asyncio.sleep(self.change_time)
-            
-            # Swap states for opposing groups
-            TrafficLightAssistant.group_states["north_south"] = "GREEN" if TrafficLightAssistant.group_states["north_south"] == "RED" else "RED"
-            TrafficLightAssistant.group_states["east_west"] = "GREEN" if TrafficLightAssistant.group_states["east_west"] == "RED" else "RED"
             
             # Update all lights in each group
             for group, state in TrafficLightAssistant.group_states.items():
@@ -80,6 +78,10 @@ class TrafficLightAssistant(MyAssistant):
                             print(f"{light_name} changed to {state}")
                     except Exception as e:
                         print(f"Error updating light {light_name}: {e}")
+            
+            # Swap states for opposing groups
+            TrafficLightAssistant.group_states["north_south"] = "GREEN" if TrafficLightAssistant.group_states["north_south"] == "RED" else "RED"
+            TrafficLightAssistant.group_states["east_west"] = "GREEN" if TrafficLightAssistant.group_states["east_west"] == "RED" else "RED"
 
     def update_change_time(self, new_time):
         """Update the traffic light timing"""

@@ -538,7 +538,7 @@ class VehicleAssistant(MyAssistant):
             return "No further road segment to follow."
             
         # Check for obstacles (traffic lights, crossings)
-        if self.current_wait <= 8 and await self._check_for_obstacles(current_xy):
+        if await self._check_for_obstacles(current_xy):
             self.current_wait += 1
             return f"Waiting due to obstacles. Wait time: {self.current_wait} sec."
         
@@ -548,8 +548,13 @@ class VehicleAssistant(MyAssistant):
             return f"Vehicle {self.name} is leaving the simulation"
         
         # Check road capacity
-        if await self._check_road_capacity(self.current_position + 1 if (self.current_position + 1 < len(self.roads)) else 0) or self.current_wait > 8:
-            pass
+        if await self._check_road_capacity(self.current_position + 1 if (self.current_position + 1 < len(self.roads)) else 0):
+            # If road has capacity, we can move forward
+            # If we were waiting, record the wait time before moving
+            if self.current_wait > 0:
+                self.wait_times.append(self.current_wait)
+                print(f"{self.name}: Recorded wait time of {self.current_wait} seconds")
+                self.current_wait = 0
         else:
             self.current_wait += 1
             return f"Cannot advance - next road at capacity. Wait time: {self.current_wait} sec."
@@ -563,11 +568,6 @@ class VehicleAssistant(MyAssistant):
             self.route.append(self.current_position)
             self.movement_progress = 0.0
             
-            # Reset wait counter if we've been waiting
-            if self.current_wait > 0:
-                self.wait_times.append(self.current_wait) 
-                self.current_wait = 0
-                
             msg = f"Vehicle moved to road segment {self.current_position}"
         else:
             msg = f"Vehicle moving along road segment {self.current_position} ({self.movement_progress:.1f})"
@@ -577,70 +577,45 @@ class VehicleAssistant(MyAssistant):
 
     async def _check_for_obstacles(self, position):
         x, y = position
-        if self.current_wait > 10:
-            print(f"{self.name} has been waiting for {self.current_wait} steps - forcing movement")
-            return False
         
-        key_intersections = [
-            # Left intersections
-            {"traffic_light": "traffic_light_left_top",    "crossing": "crossing_left_top",    "x": 50,  "y": 50},
-            {"traffic_light": "traffic_light_left_bottom", "crossing": "crossing_left_bottom", "x": 50,  "y": 450},
-            # Right intersections
-            {"traffic_light": "traffic_light_right_top",   "crossing": "crossing_right_top",   "x": 750, "y": 50},
-            {"traffic_light": "traffic_light_right_bottom","crossing": "crossing_right_bottom","x": 750, "y": 450},
-            # Middle intersections
-            {"traffic_light": "traffic_light_mid_left",    "crossing": "crossing_mid_2",       "x": 250, "y": 250},
-            {"traffic_light": "traffic_light_mid_right",   "crossing": "crossing_mid_3",       "x": 450, "y": 250}
-        ]
-        
-        for intersection in key_intersections:
-            if is_nearby((intersection["x"], intersection["y"]), (x, y), threshold=60):
-                light_id = AgentId(intersection["traffic_light"], "default")
+        # Check for traffic lights
+        for light in self.traffic_lights:
+            if is_nearby((light["x"], light["y"]), (x, y), threshold=50):
+                light_id = AgentId(light["id"], "default")
                 try:
                     res = await self.runtime.send_message(
                         MyMessageType(content="request_state", source=self.name), 
                         light_id
                     )
                     if "red" in res.content.lower():
-                        print(f"{self.name} stopped at red light {intersection['traffic_light']} at key intersection")
+                        print(f"{self.name} stopped at red light {light['id']}")
                         return True
                     else:
-                        print(f"{self.name} has green light at key intersection {intersection['traffic_light']}")
-                        return False
+                        print(f"{self.name} passing through green light {light['id']}")
                 except Exception as e:
-                    print(f"Error checking traffic light at key intersection: {e}")
+                    print(f"Error checking traffic light {light['id']}: {e}")
         
-        for light in self.traffic_lights:
-            if is_nearby((light["x"], light["y"]), (x, y)):
-                light_id = AgentId(light["id"], "default")
-                res = await self.runtime.send_message(
-                    MyMessageType(content="request_state", source=self.name), 
-                    light_id
-                )
-                if "red" in res.content.lower():
-                    print(f"{self.name} stopped at red light {light['id']}")
-                    return True
-        
+        # Check for pedestrian crossings
         for crossing in self.crossings:
-            if is_nearby((crossing["x"], crossing["y"]), (x, y)):
+            if is_nearby((crossing["x"], crossing["y"]), (x, y), threshold=40):
                 crossing_id = AgentId(crossing["id"], "default")
-                res = await self.runtime.send_message(
-                    MyMessageType(content="request_state", source=self.name), 
-                    crossing_id
-                )
-                
-                if "occupied" in res.content.lower():
-                    print(f"{self.name} stopped at occupied crossing {crossing['id']}")
-                    return True
+                try:
+                    res = await self.runtime.send_message(
+                        MyMessageType(content="request_state", source=self.name), 
+                        crossing_id
+                    )
                     
-                elif "free queue=" in res.content.lower():
-                    try:
-                        queue_size = int(res.content.lower().split("queue=")[1])
-                        if queue_size > 10 and random.random() < 0.05:
-                            print(f"{self.name} cautiously waiting at busy crossing {crossing['id']}")
-                            return True
-                    except (IndexError, ValueError):
-                        pass
+                    if "occupied" in res.content.lower():
+                        print(f"{self.name} stopped at occupied crossing {crossing['id']}")
+                        return True
+                except Exception as e:
+                    print(f"Error checking pedestrian crossing {crossing['id']}: {e}")
+        
+        # Only force movement if we've been waiting too long
+        if self.current_wait > 10:
+            print(f"{self.name} has been waiting for {self.current_wait} steps - forcing movement")
+            return False
+            
         return False
 
     def get_next_position(self):

@@ -60,8 +60,15 @@ class ParkingAreaObject(MapObject):
     def __init__(self, id, agent, x=200, y=200, width=40, height=30, parking_type="street"):
         super().__init__(id, x, y)
         self.agent = agent
-        self.width = width
-        self.height = height
+        
+        # Adjust size based on parking type
+        if parking_type == "roadside":
+            self.width = 20  # Smaller width for roadside parking
+            self.height = 15  # Smaller height for roadside parking
+        else:
+            self.width = width
+            self.height = height
+            
         self.parking_type = parking_type
 
     def render(self, canvas):
@@ -78,7 +85,7 @@ class ParkingAreaObject(MapObject):
             else:
                 fill_color = "blue" # Default or if capacity is 0
 
-            # Adjust size based on type
+            # Adjust styling based on type
             if self.parking_type == "building":
                 width, height = self.width * 1.5, self.height * 1.5
                 # Draw parking building (larger rectangle with roof)
@@ -94,21 +101,37 @@ class ParkingAreaObject(MapObject):
                     self.x + width/2, self.y - height/2,
                     fill="darkblue", outline="black"
                 )
+            elif self.parking_type == "roadside":
+                # Draw roadside parking as a smaller blue box
+                canvas.create_rectangle(
+                    self.x - self.width/2, self.y - self.height/2,
+                    self.x + self.width/2, self.y + self.height/2,
+                    fill=fill_color, outline="black", width=1
+                )
+                # Add small dots to indicate parking spots
+                spot_size = 2
+                for i in range(-1, 2):
+                    spot_x = self.x + (i * self.width/3)
+                    canvas.create_rectangle(
+                        spot_x - spot_size, self.y - spot_size,
+                        spot_x + spot_size, self.y + spot_size,
+                        fill="white", outline="white"
+                    )
             else:
-                width, height = self.width, self.height
                 # Draw street parking (rectangle with P symbol)
                 canvas.create_rectangle(
-                    self.x - width/2, self.y - height/2,
-                    self.x + width/2, self.y + height/2,
+                    self.x - self.width/2, self.y - self.height/2,
+                    self.x + self.width/2, self.y + self.height/2,
                     fill=fill_color, outline="black", width=2
                 )
 
-            # Add parking symbol
+            # Add parking symbol (smaller for roadside)
+            font_size = 8 if self.parking_type == "roadside" else 12
             canvas.create_text(
                 self.x, self.y,
                 text="P",
                 fill="white",
-                font=("Arial", 12, "bold")
+                font=("Arial", font_size, "bold")
             )
 
             # Add status text
@@ -117,11 +140,13 @@ class ParkingAreaObject(MapObject):
             else:
                 status_text = self.id
 
+            font_size = 7 if self.parking_type == "roadside" else 9
+            text_offset = self.height/2 + 8 if self.parking_type == "roadside" else self.height/2 + 10
             canvas.create_text(
-                self.x, self.y - height/2 - 10,
+                self.x, self.y - text_offset,
                 text=status_text,
                 fill="black",
-                font=("Arial", 9)
+                font=("Arial", font_size)
             )
         else:
             # Fallback if no agent

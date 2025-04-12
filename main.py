@@ -341,6 +341,14 @@ async def main():
     log_buffer = io.StringIO()
     original_stdout = sys.stdout
     
+    # Initialize statistics tracking
+    simulation_stats = {
+        "vehicles_entered": 0,
+        "vehicles_exited": 0,
+        "wait_times": [],
+        "start_time": datetime.datetime.now()
+    }
+    
     try:
         # Redirect stdout to our buffer
         sys.stdout = log_writer = io.StringIO()
@@ -387,6 +395,49 @@ async def main():
 
         # Run simulation
         await run_simulation(runtime, vehicles, parking_areas, args.sim_time)
+
+        # Collect final statistics from vehicles
+        print("\n=== Simulation Statistics ===")
+        all_wait_times = []
+        for vehicle_id, agent in vehicles:
+            if agent.entered:
+                simulation_stats["vehicles_entered"] += 1
+                # Check if vehicle has exited the simulation (despawned)
+                if not hasattr(agent, 'x') or agent.x is None:
+                    simulation_stats["vehicles_exited"] += 1
+                
+                # Collect wait times from vehicles
+                if hasattr(agent, 'wait_times') and agent.wait_times:
+                    simulation_stats["wait_times"].extend(agent.wait_times)
+                    all_wait_times.extend(agent.wait_times)
+                    # Print sum of wait times instead of the full list
+                    total_wait = sum(agent.wait_times)
+                    avg_wait = total_wait / len(agent.wait_times) if agent.wait_times else 0
+                    print(f"{vehicle_id} - Total wait time: {total_wait} seconds, Waits: {len(agent.wait_times)}, Avg: {avg_wait:.2f} sec/wait")
+        
+        # Calculate wait time statistics
+        if all_wait_times:
+            max_wait = max(all_wait_times)
+            min_wait = min(all_wait_times)
+            avg_wait = sum(all_wait_times) / len(all_wait_times)
+            total_wait_time = sum(all_wait_times)
+            print(f"\nWait Time Statistics:")
+            print(f"  Maximum wait time: {max_wait} seconds")
+            print(f"  Minimum wait time: {min_wait} seconds")
+            print(f"  Average wait time: {avg_wait:.2f} seconds")
+            print(f"  Total wait time (all vehicles): {total_wait_time} seconds")
+            print(f"  Total number of waits: {len(all_wait_times)}")
+        else:
+            print("No wait times recorded in this simulation.")
+            
+        print(f"\nVehicles that entered the system: {simulation_stats['vehicles_entered']}")
+        print(f"Vehicles that exited the system: {simulation_stats['vehicles_exited']}")
+        
+        # Calculate total simulation time
+        simulation_end_time = datetime.datetime.now()
+        simulation_duration = (simulation_end_time - simulation_stats["start_time"]).total_seconds()
+        print(f"Total simulation time: {simulation_duration:.2f} seconds")
+        print("===========================\n")
 
         # Cleanup
         await runtime.stop()
