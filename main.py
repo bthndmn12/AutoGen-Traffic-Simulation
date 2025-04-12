@@ -248,6 +248,9 @@ async def register_vehicles(runtime, vehicles_config, road_tuples, crossings, li
             pass  # Agent already exists
 
         agent = await runtime._get_agent(AgentId(v["id"], "default"))
+        agent.entered = False
+        agent.start_x = start_x
+        agent.start_y = start_y
         vehicles.append((v["id"], agent))
         visualizer.add_object(VehicleObject(v["id"], agent, x=start_x, y=start_y))
     
@@ -301,6 +304,15 @@ async def run_simulation(runtime, vehicles, parking_areas, simulation_steps):
     """Run the main simulation loop for the specified number of steps"""
     for i in range(simulation_steps):
         print(f"Simulation step {i}/{simulation_steps}")
+
+        for idx, (vehicle_id, agent) in enumerate(vehicles):
+            if agent.entered:
+                continue  # Skip already entered
+
+            if idx == 0 or (vehicles[idx - 1][1].x != vehicles[idx - 1][1].start_x or vehicles[idx - 1][1].y != vehicles[idx - 1][1].start_y):
+                agent.entered = True
+                print(f"{vehicle_id} has entered the environment.")
+                break 
         
         # Every 10 steps, send a park command to the first vehicle, but only if using the parking scenario
         if parking_areas and i > 0 and i % 10 == 0 and vehicles:
@@ -313,11 +325,12 @@ async def run_simulation(runtime, vehicles, parking_areas, simulation_steps):
             
         # Regular movement for all vehicles
         for vehicle_id, agent in vehicles:
-            await runtime.send_message(
-                MyMessageType(content="move", source="user"),
-                AgentId(vehicle_id, "default")
-            )
-            print(f"Vehicle {vehicle_id} moved to coordinates ({agent.x}, {agent.y})")
+            if agent.entered:
+                await runtime.send_message(
+                    MyMessageType(content="move", source="user"),
+                    AgentId(vehicle_id, "default")
+                )
+                print(f"Vehicle {vehicle_id} moved to coordinates ({agent.x}, {agent.y})")
             
         await asyncio.sleep(1)
 

@@ -1,8 +1,8 @@
 {
   "vehicles": [
-    { "id": "vehicle_1", "x": 50, "y": 50, "spawn": true },
-    { "id": "vehicle_2", "x": 750, "y": 450, "spawn": true },
-    { "id": "vehicle_3", "x": 450, "y": 50, "spawn": true }
+    { "id": "vehicle_1", "x": 50, "y": 0, "spawn": false },
+    { "id": "vehicle_2", "x": 50, "y": 0, "spawn": false },
+    { "id": "vehicle_3", "x": 50, "y": 0, "spawn": false }
   ],
   "traffic_lights": [
     { "id": "traffic_light_left_top", "x": 50, "y": 50 },
