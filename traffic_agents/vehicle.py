@@ -138,6 +138,7 @@ class VehicleAssistant(MyAssistant):
         self.movement_progress = 0.0  # Progress along current road (0.0 to 1.0)
         self.movement_step = 0.05      # Movement increment per step
         self.route = [current_position]  # History of visited road indices
+        self.steps_since_start = 0
         
         # Environment elements
         self.roads = roads or []
@@ -454,12 +455,14 @@ class VehicleAssistant(MyAssistant):
             
             else:
                 # Normal driving state
+                self.steps_since_start += 1
                 if await self._check_for_collisions():
                     self.current_wait += 1
                     response_message = f"Cannot move due to potential collision. Wait time: {self.current_wait} sec."
                 else:
-                    if self.parking_cooldown <= 0 and await self._check_for_parking():
-                        response_message = f"Vehicle found parking at {self.target_parking}"
+                    if self.parking_cooldown <= 0 and self.steps_since_start > 10:
+                        if await self._check_for_parking():
+                            response_message = f"Vehicle found parking at {self.target_parking}"
                     else:
                         response_message = await self._move_forward()
 
