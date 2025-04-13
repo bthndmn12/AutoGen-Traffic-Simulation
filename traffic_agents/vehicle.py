@@ -1,767 +1,847 @@
+import math
+import random
 from autogen_core import AgentId, MessageContext, message_handler
 from traffic_agents.base import MyAssistant
 from messages.types import MyMessageType
-import math
-import random
-
 
 def is_nearby(pos1, pos2, threshold=30):
-    """Check if two positions are within a threshold distance of each other using Euclidean distance"""
+    """Check if two positions are within a threshold distance of each other using Euclidean distance."""
     x1, y1 = pos1
     x2, y2 = pos2
-    distance = math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
-    return distance < threshold  
-
+    distance = math.sqrt((x2 - x1)**2 + (y2 - y1)**2)
+    return distance < threshold
 
 def is_close_to_vehicle(pos1, pos2, threshold=15):
-    """Check if two vehicles are close to each other using Euclidean distance"""
+    """Check if two vehicles are close to each other using Euclidean distance."""
     x1, y1 = pos1
     x2, y2 = pos2
-    distance = math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
-    return distance < threshold  
-
+    distance = math.sqrt((x2 - x1)**2 + (y2 - y1)**2)
+    return distance < threshold
 
 def is_intersection(road1, road2):
-    """Determine if and where two roads intersect"""
-    # Unpack coordinates
-    x1, y1, x2, y2 = road1[:4]  # First 4 elements are coordinates
+    """Determine if and where two roads intersect (for basic detection)."""
+    x1, y1, x2, y2 = road1[:4]
     x3, y3, x4, y4 = road2[:4]
-    
-    # Check if roads have different orientations
+    # Check orientations
     road1_horizontal = abs(y2 - y1) < abs(x2 - x1)
     road2_horizontal = abs(y4 - y3) < abs(x4 - x3)
-    
     if road1_horizontal == road2_horizontal:
-        return False  # Parallel roads don't intersect for our purposes
-    
-    # Find intersection point
+        return False
+    # Identify horizontal vs vertical
     if road1_horizontal:
         horizontal, vertical = road1, road2
     else:
         horizontal, vertical = road2, road1
-    
     h_x1, h_y1, h_x2, h_y2 = horizontal[:4]
     v_x1, v_y1, v_x2, v_y2 = vertical[:4]
-    
-    # Ensure proper order for horizontal road (left to right)
+    # Sort horizontal left→right
     if h_x1 > h_x2:
         h_x1, h_y1, h_x2, h_y2 = h_x2, h_y2, h_x1, h_y1
-    
-    # Ensure proper order for vertical road (top to bottom)
+    # Sort vertical top→bottom
     if v_y1 > v_y2:
         v_x1, v_y1, v_x2, v_y2 = v_x2, v_y2, v_x1, v_y1
-    
-    # Check for valid intersection
+    # Check bounding boxes
     if not (h_x1 <= v_x1 <= h_x2):
         return False
-    
     if not (v_y1 <= h_y1 <= v_y2):
         return False
-    
-    # Return intersection point with exact coordinates
-    intersection = get_exact_intersection_point(road1, road2)
-    return intersection is not None  
-
+    # Return actual intersection point
+    return get_exact_intersection_point(road1, road2)
 
 def get_exact_intersection_point(road1, road2):
-    """Calculate the exact intersection point of two roads based on their geometry.
-    Returns None if roads are parallel or don't intersect."""
-    # Extract coordinates
+    """Calculate exact intersection point for two line segments."""
     x1, y1, x2, y2 = road1[:4]
     x3, y3, x4, y4 = road2[:4]
-    
-    # Check if both roads are vertical or both horizontal (parallel)
-    road1_vertical = abs(x2 - x1) < 10  # Consider roads with small x difference as vertical
+
+    # Check vertical/horizontal combos quickly:
+    road1_vertical = abs(x2 - x1) < 10
     road2_vertical = abs(x4 - x3) < 10
-    
     if road1_vertical and road2_vertical:
-        return None  # Parallel vertical roads
-    
-    road1_horizontal = abs(y2 - y1) < 10  # Consider roads with small y difference as horizontal
+        return None
+    road1_horizontal = abs(y2 - y1) < 10
     road2_horizontal = abs(y4 - y3) < 10
-    
     if road1_horizontal and road2_horizontal:
-        return None  # Parallel horizontal roads
-    
-    # For a vertical and horizontal road, the intersection is simple
+        return None
+
     if road1_vertical and road2_horizontal:
-        # Check if they actually intersect
         if min(y1, y2) <= y3 <= max(y1, y2) and min(x3, x4) <= x1 <= max(x3, x4):
             return (x1, y3)
         return None
-    
+
     if road1_horizontal and road2_vertical:
-        # Check if they actually intersect
         if min(x1, x2) <= x3 <= max(x1, x2) and min(y3, y4) <= y1 <= max(y3, y4):
             return (x3, y1)
         return None
-    
-    # General case: neither road is perfectly horizontal or vertical
-    # Calculate line equations for both roads: y = mx + b
+
+    # Otherwise do line-line intersection:
     try:
         m1 = (y2 - y1) / (x2 - x1)
-        b1 = y1 - m1 * x1
-        
+        b1 = y1 - m1*x1
         m2 = (y4 - y3) / (x4 - x3)
-        b2 = y3 - m2 * x3
-        
-        # If slopes are the same, lines are parallel
-        if abs(m1 - m2) < 0.001:
+        b2 = y3 - m2*x3
+        if abs(m1 - m2) < 0.0001:
             return None
-        
-        # Calculate intersection point
-        x_intersect = (b2 - b1) / (m1 - m2)
-        y_intersect = m1 * x_intersect + b1
-        
-        # Check if intersection point is on both line segments
-        on_road1 = (min(x1, x2) <= x_intersect <= max(x1, x2)) and (min(y1, y2) <= y_intersect <= max(y1, y2))
-        on_road2 = (min(x3, x4) <= x_intersect <= max(x3, x4)) and (min(y3, y4) <= y_intersect <= max(y3, y4))
-        
+        x_int = (b2 - b1)/(m1 - m2)
+        y_int = m1*x_int + b1
+        # Check if x_int,y_int is on both segments
+        on_road1 = (min(x1, x2) <= x_int <= max(x1, x2)) and (min(y1, y2) <= y_int <= max(y1, y2))
+        on_road2 = (min(x3, x4) <= x_int <= max(x3, x4)) and (min(y3, y4) <= y_int <= max(y3, y4))
         if on_road1 and on_road2:
-            return (x_intersect, y_intersect)
+            return (x_int, y_int)
         return None
-        
     except ZeroDivisionError:
-        # Handle case where one of the lines is vertical
-        return None  
-
+        return None
 
 class VehicleAssistant(MyAssistant):
-    """Vehicle agent that handles movement, parking, and interactions with other traffic elements"""
-    
-    def __init__(self, name, current_position=0, start_x=0, start_y=0, roads=None, crossings=None, traffic_lights=None, parking_areas=None):
+    """Vehicle that handles movement, turning, parking, etc."""
+
+    def __init__(
+            self,
+            name,
+            current_position=0,
+            start_x=0,
+            start_y=0,
+            roads=None,
+            crossings=None,
+            traffic_lights=None,
+            parking_areas=None):
         super().__init__(name)
-        # Position and movement properties
         self.x = start_x
         self.y = start_y
         self.current_position = current_position
-        self.movement_progress = 0.0  # Progress along current road (0.0 to 1.0)
-        self.movement_step = 0.05      # Movement increment per step
-        self.route = [current_position]  # History of visited road indices
+        self.movement_progress = 0.0
+        self.movement_step = 0.05
+        self.route = [current_position]
         self.steps_since_start = 0
-        
-        # Environment elements
+
         self.roads = roads or []
         self.crossings = crossings or []
         self.traffic_lights = traffic_lights or []
         self.parking_areas = parking_areas or []
-        
-        # Ensure coordinates match the starting road position
+
         if current_position < len(self.roads):
-            # Only adjust if we need to match road coordinates
             road = self.roads[current_position]
-            x1, y1 = road[0], road[1]
-            
-            # If the start position coordinates were not specified (0,0), place at road start
             if start_x == 0 and start_y == 0:
-                self.x = x1
-                self.y = y1
-            # Otherwise, assume the start_x and start_y are correct  
-        
-        # Print debug information
-        print(f"{self.name}: Initialized at position ({self.x}, {self.y}) on road index {current_position}")
-        if current_position < len(self.roads) and len(self.roads[current_position]) >= 6:
+                # Place at start of the road
+                self.x = road[0]
+                self.y = road[1]
+
+        print(f"{self.name}: Initialized at ({self.x}, {self.y}) on road index {current_position}")
+        if current_position < len(self.roads) and len(self.roads[current_position])>=6:
             print(f"{self.name}: Starting on road {self.roads[current_position][5]}")
-        
-        # Road system properties
-        self.road_connections = {}    # Valid connections between roads
-        self.one_way_roads = set()    # Indices of one-way roads
-        self.spawn_points = {}        # Where vehicles can enter the simulation
-        self.despawn_points = {}      # Where vehicles can exit the simulation
-        self.vehicle_registry = {}    # Registry of all vehicles for collision detection
-        self.road_occupancy = {}      # Track road occupancy by id
-        
-        # Waiting/timing properties
-        self.wait_times = []          # History of waiting durations
-        self.current_wait = 0         # Current waiting time
-        
-        # Parking properties
+
+        # Turn logic
+        self.is_turning = False
+        self.next_road_idx = None
+        self.turn_target = None  # intersection coords
+        self.turn_origin = None
+        self.turn_progress = 0.0
+        self.turning_cooldown = 0
+        self.last_road = None
+
+        # Road system
+        self.road_connections = {}
+        self.one_way_roads = set()
+        self.spawn_points = {}
+        self.despawn_points = {}
+        self.vehicle_registry = {}
+        self.road_occupancy = {}
+
+        # Wait times
+        self.wait_times = []
+        self.current_wait = 0
+
+        # Parking
         self.parked = False
-        self.parking_state = "driving"  # States: driving, parking, parked, exiting
-        self.target_parking = None      # Current parking target
-        self.parking_timer = 0          # Countdown for parking/exiting
-        self.parking_desire = 0.3       # Probability to park when near parking
-        self.parking_cooldown = 0       # Cooldown before attempting to park again
-        self.recent_parkings = []       # Recently used parking areas to avoid immediate re-entry
-        
-        # Initialize road system
+        self.parking_state = "driving"
+        self.target_parking = None
+        self.parking_timer = 0
+        self.parking_desire = 0.3
+        self.parking_cooldown = 0
+        self.recent_parkings = []
+
+        # Setup
         self._process_road_properties()
-        self._validate_spawn_point()  
-        self._calculate_possible_turns()  
+        self._validate_spawn_point()
+        self._calculate_possible_turns()
+
+    def set_vehicle_registry(self, registry):
+        """Unused collision registry."""
+        self.vehicle_registry = registry
 
     def _validate_spawn_point(self):
-        """Ensure the vehicle spawns at a valid point on the road."""
         if self.current_position < len(self.roads):
             road = self.roads[self.current_position]
             if len(road) >= 4:
-                x1, y1, x2, y2 = road[:4]
-                self.x = x1
-                self.y = y1
-                print(f"{self.name}: Spawned at valid point ({self.x}, {self.y}) on road {self.current_position}")
-            else:
-                print(f"{self.name}: Invalid road data for spawning.")
-        else:
-            print(f"{self.name}: Invalid road index for spawning.")  
-
-    def _calculate_turns_at_intersections(self):
-        """Enhance turn logic to handle intersections with crossings and traffic lights."""
-        key_intersections = [
-            {"x": 250, "y": 50,  "crossings": ["crossing_top_2",    "crossing_top_3"]},
-            {"x": 250, "y": 250, "crossings": ["crossing_mid_2",    "crossing_mid_3"]},
-            {"x": 250, "y": 450, "crossings": ["crossing_bottom_2", "crossing_bottom_3"]},
-            {
-                "x": 50,  "y": 250, 
-                "crossings": ["crossing_left_mid"], 
-                "traffic_lights": ["traffic_light_left_top", "traffic_light_left_bottom"]
-            },
-            {
-                "x": 450, "y": 250, 
-                "crossings": ["crossing_right_mid"], 
-                "traffic_lights": ["traffic_light_right_top", "traffic_light_right_bottom"]
-            }
-        ]
-        for intersection in key_intersections:
-            for i, road1 in enumerate(self.roads):
-                x1, y1, x2, y2 = road1[:4]
-                if abs(x1 - intersection["x"]) < 10 and abs(y1 - intersection["y"]) < 10:
-                    for j, road2 in enumerate(self.roads):
-                        if i != j:
-                            x3, y3, x4, y4 = road2[:4]
-                            if abs(x3 - intersection["x"]) < 10 and abs(y3 - intersection["y"]) < 10:
-                                self.turn_options.setdefault(i, []).append((j, (intersection["x"], intersection["y"])))
-                                print(f"{self.name}: Turn option added from road {i} to road {j} at intersection ({intersection['x']}, {intersection['y']})")  
+                self.x, self.y = road[0], road[1]
+                print(f"{self.name}: Valid spawn on road {self.current_position} at ({self.x},{self.y})")
 
     def _process_road_properties(self):
-        super()._process_road_properties()
+        """Reads the user’s JSON road data into internal structures."""
+        self.road_connections = {}
+        self.one_way_roads = set()
+        self.spawn_points = {}
+        self.despawn_points = {}
 
+        for i,road in enumerate(self.roads):
+            # one_way
+            if len(road) >= 7:
+                if road[6]:
+                    self.one_way_roads.add(i)
+            # spawn
+            if len(road) >= 8:
+                if road[7]:
+                    self.spawn_points[i] = True
+            # despawn
+            if len(road) >= 9:
+                if road[8]:
+                    self.despawn_points[i] = True
+        # If the user has explicit connections
+        for i,road in enumerate(self.roads):
+            if len(road) >= 10 and isinstance(road[9], list):
+                self.road_connections[i] = road[9]
 
+        # Debug
+        road_id="unknown"
+        if self.current_position<len(self.roads) and len(self.roads[self.current_position])>=6:
+            road_id=self.roads[self.current_position][5]
+        print(f"=== {self.name} Road Props ===")
+        print(f"Current road: {road_id} index={self.current_position}")
+        print(f"One-ways: {len(self.one_way_roads)}")
+        print(f"Spawns: {len(self.spawn_points)}")
+        print(f"Despawns: {len(self.despawn_points)} => {self.despawn_points}")
+        print(f"Connections: {len(self.road_connections)}")
 
-    def set_vehicle_registry(self, registry):
-        """Set the registry of all vehicles for collision detection"""
-        self.vehicle_registry = registry
+        # If no connections exist, compute fallback
+        if not self.road_connections:
+            self._calculate_default_connections()
+
+    def _calculate_default_connections(self):
+        """If roads have no explicit connections, guess by geometry (end of one is near start of another)."""
+        print(f"{self.name}: Calculating default connections by geometry.")
+        for i,road1 in enumerate(self.roads):
+            conns=[]
+            x1,y1,x2,y2=road1[:4]
+            end=(x2,y2)
+            for j,road2 in enumerate(self.roads):
+                if i==j: continue
+                sx,sy=road2[0],road2[1]
+                dist=math.sqrt((end[0]-sx)**2+(end[1]-sy)**2)
+                if dist<60:
+                    conns.append(j)
+            if conns:
+                self.road_connections[i]=conns
+                print(f"{self.name}: Road {i} => {conns}")
+
+    def _calculate_turns_at_intersections(self):
+        """
+        If you have “key_intersections” for special logic, you can handle them here.
+        For now, we won't override them unless you specifically want it.
+        """
+        pass
 
     def _calculate_possible_turns(self):
-        """Calculate valid turns at designated connection points"""
+        """Compute possible turns from self.road_connections plus intersection geometry if needed."""
         self.turn_options = {}
-        
-        # First try using explicit road connections
-        for i, road1 in enumerate(self.roads):
-            road_id = road1[5] if len(road1) >= 6 else f"road_{i}"
-            
-            if i in self.road_connections:
-                turns = []
-                for j in self.road_connections[i]:
-                    if i == j:  # Skip self-connections
-                        continue
-                        
-                    road2 = self.roads[j]
-                    
-                    # Use the precise intersection calculation
-                    intersection = get_exact_intersection_point(road1, road2)
-                    
-                    if intersection:
-                        # Get road directions for better turns
-                        road1_dir = self._get_road_direction(road1)
-                        road2_dir = self._get_road_direction(road2)
-                        
-                        # Avoid U-turns (roads in opposite directions)
-                        if not self._is_opposite_direction(road1_dir, road2_dir):
-                            # Calculate angle between roads
-                            x1, y1, x2, y2 = road1[:4]
-                            x3, y3, x4, y4 = road2[:4]
-                            angle = math.atan2(y4 - y3, x4 - x3) - math.atan2(y2 - y1, x2 - x1)
-                            angle = math.degrees(angle)
-                            
-                            # Normalize angle to be between -180 and 180
-                            angle = (angle + 180) % 360 - 180
-                            
-                            # Check if angle is within reasonable turning range
-                            if abs(angle) <= 120:
-                                int_x, int_y = int(round(intersection[0])), int(round(intersection[1]))
-                                precise_intersection = (int_x, int_y)
-                                turns.append((j, precise_intersection, road1_dir, road2_dir))
-                                print(f"{self.name}: Road {road_id} connects to road {j} at precise intersection {precise_intersection}")
-                if turns:
-                    self.turn_options[i] = turns
-                    print(f"{self.name}: Road {road_id} has {len(turns)} turning options")
-        
-        # Fall back to intersection detection if no connections defined
-        if not self.turn_options:
-            print(f"{self.name}: No road connections found, using strict intersection detection")
-            self._calculate_turns_by_strict_intersection()  
-
-    def _calculate_turns_by_strict_intersection(self):
-        """Calculate turns using exact geometric intersections that match the map design"""
-        key_intersections = [
-            {"x": 50,  "y": 50},    
-            {"x": 50,  "y": 250},   
-            {"x": 50,  "y": 450},   
-            {"x": 250, "y": 50},    
-            {"x": 250, "y": 250},  
-            {"x": 250, "y": 450},  
-            {"x": 450, "y": 50},   
-            {"x": 450, "y": 250},  
-            {"x": 450, "y": 450},  
-            {"x": 750, "y": 50},   
-            {"x": 750, "y": 250},  
-            {"x": 750, "y": 450}   
-        ]
-        
-        for i, road1 in enumerate(self.roads):
-            turns = []
-            road_id = road1[5] if len(road1) >= 6 else f"road_{i}"
-            
-            # Check if this road passes through any key intersection
-            road1_points = []
-            x1, y1, x2, y2 = road1[:4]
-            
-            for point in key_intersections:
-                # For horizontal roads
-                if abs(y2 - y1) < 10:
-                    if abs(y1 - point["y"]) < 10 and min(x1, x2) <= point["x"] <= max(x1, x2):
-                        road1_points.append((point["x"], point["y"]))
-                elif abs(x2 - x1) < 10:
-                    # For vertical roads
-                    if abs(x1 - point["x"]) < 10 and min(y1, y2) <= point["y"] <= max(y1, y2):
-                        road1_points.append((point["x"], point["y"]))
-            
-            # For each intersection point on this road, find other roads that also pass through it
-            for intersection in road1_points:
-                for j, road2 in enumerate(self.roads):
-                    if i == j:
-                        continue
-                    ox1, oy1, ox2, oy2 = road2[:4]
-                    
-                    if abs(ox2 - ox1) < 10:
-                        # Vertical road
-                        if abs(ox1 - intersection[0]) < 10 and min(oy1, oy2) <= intersection[1] <= max(oy1, oy2):
-                            road1_dir = self._get_road_direction(road1)
-                            road2_dir = self._get_road_direction(road2)
-                            if not self._is_opposite_direction(road1_dir, road2_dir):
-                                turns.append((j, intersection, road1_dir, road2_dir))
-                    elif abs(oy2 - oy1) < 10:
-                        # Horizontal road
-                        if abs(oy1 - intersection[1]) < 10 and min(ox1, ox2) <= intersection[0] <= max(ox1, ox2):
-                            road1_dir = self._get_road_direction(road1)
-                            road2_dir = self._get_road_direction(road2)
-                            if not self._is_opposite_direction(road1_dir, road2_dir):
-                                turns.append((j, intersection, road1_dir, road2_dir))
-            
-            if turns:
-                self.turn_options[i] = turns
-                print(f"{self.name}: Road {road_id} has {len(turns)} strict intersection turning options")  
+        # If you want to do “strict intersection detection,” you can add that logic here
+        # or call something like self._calculate_turns_by_strict_intersection()
+        # For now, we rely on self.road_connections only:
+        for i,road1 in enumerate(self.roads):
+            if i not in self.road_connections: 
+                continue
+            possible = []
+            for j in self.road_connections[i]:
+                if i==j:
+                    continue
+                # compute intersection or angle checks if you want
+                # For now we just store a dummy intersection = the end of road1
+                # or the start of road2. Usually you want the actual intersection point:
+                inter = get_exact_intersection_point(road1, self.roads[j])
+                if inter:
+                    # get directions
+                    rd1_dir = self._get_road_direction(road1)
+                    rd2_dir = self._get_road_direction(self.roads[j])
+                    # skip direct U-turn
+                    if not self._is_opposite_direction(rd1_dir, rd2_dir):
+                        possible.append( (j, inter, rd1_dir, rd2_dir) )
+            if possible:
+                self.turn_options[i] = possible
+                print(f"{self.name}: Road {i} has {len(possible)} turn options from connections.")
 
     def _get_road_direction(self, road):
-        """Determine primary direction of a road (N, S, E, W)"""
-        x1, y1, x2, y2 = road[:4]
+        x1,y1,x2,y2=road[:4]
         dx = x2 - x1
         dy = y2 - y1
-        
-        if abs(dx) > abs(dy):
-            return "E" if dx > 0 else "W"
+        if abs(dx)>abs(dy):
+            return "E" if dx>0 else "W"
         else:
-            return "S" if dy > 0 else "N"
+            return "S" if dy>0 else "N"
 
-    def _is_opposite_direction(self, dir1, dir2):
-        """Check if two directions are opposites (N-S or E-W)"""
-        opposites = {"N": "S", "S": "N", "E": "W", "W": "E"}
-        return opposites.get(dir1) == dir2
+    def _is_opposite_direction(self, d1, d2):
+        """True if one is N and the other S, or E vs W."""
+        opp={"N":"S","S":"N","E":"W","W":"E"}
+        return opp.get(d1)==d2
+
+    def is_at_intersection(self):
+        """Not strictly used, but you can adapt from your original code."""
+        return False
 
     def _check_if_near_despawn_point(self):
-        """Check if vehicle should despawn based on position"""
-        if self.current_position in self.despawn_points and self.movement_progress > 0.9:
+        # A more thorough check if near the end
+        if self.current_position in self.despawn_points and self.movement_progress>0.8:
+            return True
+        # If we have repeated the same roads multiple times
+        counts={}
+        for r in self.route:
+            counts[r]=counts.get(r,0)+1
+            if counts[r]>=3:
+                return True
+        # If we have been driving too long
+        if self.steps_since_start>100:
             return True
         return False
 
-    def is_at_intersection(self):
-        """Determine if a vehicle is at or near an intersection by checking for nearby connecting roads"""
-        if self.current_position >= len(self.roads):
-            return False
-            
-        current_road = self.roads[self.current_position]
-        if len(current_road) < 6:
-            return False
-            
-        if self.movement_progress < 0.25 or self.movement_progress > 0.75:
-            x1, y1, x2, y2 = current_road[:4]
-            pos_x = x1 + (x2 - x1) * self.movement_progress
-            pos_y = y1 + (y2 - y1) * self.movement_progress
-            
-            for i, other_road in enumerate(self.roads):
-                if i != self.current_position:
-                    current_horizontal = abs(y2 - y1) < abs(x2 - x1)
-                    ox1, oy1, ox2, oy2 = other_road[:4]
-                    other_horizontal = abs(oy2 - oy1) < abs(ox2 - ox1)
-                    
-                    if current_horizontal != other_horizontal:
-                        intersection = is_intersection(current_road, other_road)
-                        if intersection:
-                            ix, iy = intersection
-                            distance = math.sqrt((pos_x - ix) ** 2 + (pos_y - iy) ** 2)
-                            if distance < 60:
-                                return True
-        return False  
-
     @message_handler
     async def handle_my_message_type(self, message: MyMessageType, ctx: MessageContext) -> None:
-        """Handle incoming messages to the vehicle agent"""
-        print(f"{self.name} (Vehicle) received message: {message.content}")
-        response_message = ""
-
-        # Handle parking exit notification
-        if "exit_notification" in message.content.lower():
-            if self.parking_state == "parked" and self.target_parking == message.source:
-                await self._exit_parking()
-                response_message = f"Received exit notification from {message.source}. Initiating exit."
-                print(f"{self.name} (Vehicle) responds with: {response_message}")
-                return
-        
-        # Handle movement command
+        print(f"{self.name} received: {message.content}")
+        if hasattr(self,'exiting') and self.exiting:
+            return
+        if hasattr(self,'removed') and self.removed:
+            return
+        response = ""
         if "move" in message.content.lower():
-            # Update parking cooldown if active
-            if self.parking_cooldown > 0:
-                self.parking_cooldown -= 1
-                print(f"{self.name}: Parking cooldown: {self.parking_cooldown} steps remaining")
-            
-            if self.parking_state == "parked":
-                if random.random() < 0.05:
+            self.steps_since_start+=1
+            if self.parking_state=="parked":
+                # small chance to exit
+                if random.random()<0.05:
                     await self._exit_parking()
-                    response_message = f"Initiating exit from parking at {self.target_parking}"
+                    response=f"Vehicle leaving parking {self.target_parking}"
                 else:
-                    response_message = f"Vehicle is parked at {self.target_parking}"
-            
-            elif self.parking_state in ["parking", "exiting"]:
-                self.parking_timer -= 1
-                if self.parking_timer <= 0:
-                    if self.parking_state == "parking":
-                        self.parking_state = "parked"
-                        response_message = f"Completed parking at {self.target_parking}"
+                    response=f"Vehicle is parked at {self.target_parking}"
+            elif self.parking_state in ["parking","exiting"]:
+                self.parking_timer-=1
+                if self.parking_timer<=0:
+                    if self.parking_state=="parking":
+                        self.parking_state="parked"
+                        response=f"{self.name} completed parking at {self.target_parking}"
                     else:
-                        self.parking_state = "driving"
-                        self.parked = False
+                        self.parking_state="driving"
+                        self.parked=False
                         if self.target_parking not in self.recent_parkings:
                             self.recent_parkings.append(self.target_parking)
-                            if len(self.recent_parkings) > 3:
+                            if len(self.recent_parkings)>3:
                                 self.recent_parkings.pop(0)
-                        self.parking_cooldown = random.randint(10, 20)
-                        old_target = self.target_parking
-                        self.target_parking = None
-                        response_message = f"Exited from parking {old_target}. Cooldown: {self.parking_cooldown} steps."
+                        self.parking_cooldown = random.randint(10,20)
+                        old=self.target_parking
+                        self.target_parking=None
+                        response=f"Exited parking {old}. cooldown={self.parking_cooldown}"
                 else:
-                    response_message = f"Still {self.parking_state}... {self.parking_timer}s remaining"
-            
+                    response=f"Still {self.parking_state}: {self.parking_timer}s"
             elif self.parked:
-                response_message = "The vehicle is parked and cannot move."
-            
+                response="Vehicle is parked"
             else:
-                # Normal driving state
-                self.steps_since_start += 1
-                if await self._check_for_collisions():
-                    self.current_wait += 1
-                    response_message = f"Cannot move due to potential collision. Wait time: {self.current_wait} sec."
+                # normal movement
+                collision=await self._check_for_collisions()
+                if collision:
+                    self.current_wait+=1
+                    response=f"Blocked by collision? wait={self.current_wait}"
                 else:
-                    if self.parking_cooldown <= 0 and self.steps_since_start > 10:
-                        if await self._check_for_parking():
-                            response_message = f"Vehicle found parking at {self.target_parking}"
-                    else:
-                        response_message = await self._move_forward()
+                    # maybe parking
+                    found=False
+                    if self.parking_cooldown<=0 and self.steps_since_start>10:
+                        found=await self._check_for_parking()
+                        if found:
+                            response=f"Vehicle is parking at {self.target_parking}"
+                    if not found:
+                        response=await self._move_forward()
 
-        elif "park" in message.content.lower():
-            if not self.parked and self.parking_state == "driving":
-                if self.parking_cooldown > 0:
-                    response_message = f"Vehicle is on parking cooldown for {self.parking_cooldown} more steps."
-                else:
-                    parking = self._find_nearest_parking()
-                    if parking:
-                        self.target_parking = parking["id"]
-                        parking_response = await self._request_parking(parking["id"])
-                        
-                        if "accepted" in parking_response:
-                            try:
-                                parking_time = int(parking_response.split("=")[1])
-                            except (IndexError, ValueError):
-                                parking_time = 3
-                                
-                            self.parking_state = "parking"
-                            self.parking_timer = parking_time
-                            self.parked = True
-                            response_message = f"Started parking at {parking['id']}, time: {parking_time}s"
-                        else:
-                            self.target_parking = None
-                            response_message = f"Parking rejected at {parking['id']}: {parking_response}"
-                    else:
-                        response_message = "No suitable parking areas available"
-            else:
-                response_message = f"Cannot park now. Current state: {self.parking_state}"
-        
-        elif "unpark" in message.content.lower() or "exit" in message.content.lower():
-            if self.parking_state == "parked":
-                await self._exit_parking()
-                response_message = f"Initiating exit from {self.target_parking}"
-            else:
-                response_message = f"Cannot exit parking. Current state: {self.parking_state}"
-        
-        if response_message:
-            print(f"{self.name} (Vehicle) responds with: {response_message}")
-        else:
-            print(f"{self.name} (Vehicle) did not generate a response.")
+        if response:
+            print(f"{self.name} => {response}")
 
     async def _check_for_collisions(self):
-        """Simple collision detection without turn logic"""
-        # Basic collision detection
         return False
 
-    async def _continue_turn(self):
-        """Continue a turn in progress"""
-        if not self.is_turning:
-            return "No turn in progress."
-        
-        # Check target road capacity
-        if not await self._check_road_capacity(self.next_road_idx):
+    async def _move_forward(self):
+        """Main driving step. Also checks if turning, or if near despawn."""
+        if self.is_turning:
+            return await self._continue_turn()
+
+        # check obstacles
+        blocked = await self._check_for_obstacles((self.x, self.y))
+        if blocked and self.current_wait < 4:  # Limit wait time to prevent vehicles from getting stuck
             self.current_wait += 1
-            return f"Waiting to turn - target road at capacity. Wait time: {self.current_wait}"
+            if self.current_wait > 3:
+                print(f"{self.name} forcing movement next time.")
+            return f"Waiting for obstacle. wait={self.current_wait}"
 
         if self.current_wait > 0:
             self.wait_times.append(self.current_wait)
             self.current_wait = 0
-        
-        self.is_turning = False
-        self.current_position = self.next_road_idx
-        self.update_coordinates()
-        self.route.append(self.current_position)
-        
-        return f"Vehicle completed turn onto road {self.current_position} at ({self.x:.1f}, {self.y:.1f})"
 
-    async def _move_forward(self):
-        """Move the vehicle forward along the current road segment"""
-        current_xy = (self.x, self.y)
-        next_xy = self.get_next_position()
-        
-        if not next_xy:
-            return "No further road segment to follow."
-            
-        # Check for obstacles (traffic lights, crossings)
-        if await self._check_for_obstacles(current_xy):
-            self.current_wait += 1
-            return f"Waiting due to obstacles. Wait time: {self.current_wait} sec."
-        
-        # Check if vehicle should despawn
-        if self.movement_progress >= 0.85 and self._check_if_near_despawn_point():
-            print(f"{self.name} is despawning at the end of road {self.current_position}")
-            return f"Vehicle {self.name} is leaving the simulation"
-        
-        # Check road capacity
-        if await self._check_road_capacity(self.current_position + 1 if (self.current_position + 1 < len(self.roads)) else 0):
-            # If road has capacity, we can move forward
-            # If we were waiting, record the wait time before moving
-            if self.current_wait > 0:
-                self.wait_times.append(self.current_wait)
-                print(f"{self.name}: Recorded wait time of {self.current_wait} seconds")
-                self.current_wait = 0
-        else:
-            self.current_wait += 1
-            return f"Cannot advance - next road at capacity. Wait time: {self.current_wait} sec."
-        
-        # Move forward
+        # Check despawn
+        if self.movement_progress > 0.85 and self._check_if_near_despawn_point():
+            await self._exit_simulation()
+            return f"{self.name} is despawning."
+
+        # Possibly turn
+        if self.movement_progress >= 0.75 and not self.is_turning and self.turning_cooldown <= 0:
+            turned = await self._check_for_turn()
+            if turned:
+                self.is_turning = True
+                return f"{self.name} starting turn to road {self.next_road_idx}"
+
+        if self.turning_cooldown > 0:
+            self.turning_cooldown -= 1
+
+        # Advance
         self.movement_progress += self.movement_step
-        if self.movement_progress >= 1.0:
-            # Move to next road segment
-            next_road_idx = self.current_position + 1 if (self.current_position + 1 < len(self.roads)) else 0
-            self.current_position = next_road_idx
-            self.route.append(self.current_position)
-            self.movement_progress = 0.0
-            
-            msg = f"Vehicle moved to road segment {self.current_position}"
-        else:
-            msg = f"Vehicle moving along road segment {self.current_position} ({self.movement_progress:.1f})"
         
-        self.update_coordinates()
-        return msg
+        # Handle road transitions when reaching the end
+        if self.movement_progress >= 0.999:
+            # Check if this is the last road in our route or if we're set to despawn
+            if self._check_if_near_despawn_point():
+                await self._exit_simulation()
+                return f"{self.name} leaving sim"
+
+            print(f"{self.name} has reached the end of road {self.current_position}")
+            
+            # Get current road and its end coordinates
+            old_road = self.roads[self.current_position]
+            end_x, end_y = old_road[2], old_road[3]  # x2, y2 of current road
+            
+            # Reduce occupancy for the road we're leaving
+            if len(old_road) >= 6:
+                road_id = old_road[5]
+                if road_id in self.road_occupancy and self.road_occupancy[road_id] > 0:
+                    self.road_occupancy[road_id] -= 1
+                    print(f"{self.name}: Leaving road {road_id}, occupancy now {self.road_occupancy[road_id]}")
+            
+            # Store the road we're leaving
+            self.last_road = self.current_position
+            
+            # Get the next road to transition to
+            next_road_idx = self._get_next_road()
+            print(f"{self.name} moving from road {self.current_position} to road {next_road_idx}")
+            
+            # Get the new road and compute the parameter t at the intersection point
+            new_road = self.roads[next_road_idx]
+            
+            # Compute parameter on new road based on the endpoint of old road
+            param = self._compute_parameter_on_road(new_road, end_x, end_y)
+            print(f"{self.name}: Starting new road at parameter {param:.3f} instead of 0.0")
+            
+            # Update to the new road with the correct parameter
+            self.current_position = next_road_idx
+            self.movement_progress = param  # Use intersection parameter instead of resetting to 0.0
+            self.route.append(self.current_position)
+            
+            # Update occupancy for the new road
+            if len(new_road) >= 6:
+                road_id = new_road[5]
+                if road_id not in self.road_occupancy:
+                    self.road_occupancy[road_id] = 0
+                self.road_occupancy[road_id] += 1
+                print(f"{self.name}: Entering road {road_id}, occupancy now {self.road_occupancy[road_id]}")
+            
+            # Update coordinates based on the parameter on the new road
+            self.update_coordinates()
+            
+            return f"Vehicle moved to road segment {self.current_position} at parameter {param:.3f}"
+        else:
+            # Just continue moving along current road
+            self.update_coordinates()
+            return f"Vehicle moving along road segment {self.current_position} ({self.movement_progress:.2f})"
+
+    async def _continue_turn(self):
+        """Continue turning until the turn arc is finished, then place the vehicle onto the new road at the intersection."""
+        if not self.is_turning:
+            return "No turn in progress."
+
+        # Check if the target road has capacity
+        if not await self._check_road_capacity(self.next_road_idx):
+            self.current_wait += 1
+            return f"Waiting to turn - target road {self.next_road_idx} at capacity. Wait time: {self.current_wait}"
+
+        # Reset wait counter if we were waiting
+        if self.current_wait > 0:
+            self.wait_times.append(self.current_wait)
+            self.current_wait = 0
+
+        # Progress the turn animation
+        self.turn_progress += 0.15  # Adjust turn speed as needed
+        
+        # Turn completed
+        if self.turn_progress >= 1.0:
+            # Update road transition tracking
+            self.last_road = self.current_position
+            self.current_position = self.next_road_idx
+            self.route.append(self.current_position)
+            self.is_turning = False
+            self.turning_cooldown = 5  # Cooldown before next turn
+            
+            # Get the final intersection coordinates
+            ix, iy = self._turn_arc_position(1.0)
+            
+            # Get the new road and compute the correct parameter
+            new_road = self.roads[self.current_position]
+            param = self._compute_parameter_on_road(new_road, ix, iy)
+            
+            # Update movement progress to the parameter on the new road
+            self.movement_progress = param  # NOT resetting to 0.0
+            
+            # Set position exactly at the intersection point
+            self.x, self.y = ix, iy
+            
+            # Update road occupancy
+            if len(new_road) >= 6:
+                road_id = new_road[5]
+                if road_id not in self.road_occupancy:
+                    self.road_occupancy[road_id] = 0
+                self.road_occupancy[road_id] += 1
+                print(f"{self.name}: Entering road {road_id} after turn, occupancy now {self.road_occupancy[road_id]}")
+            
+            return f"Vehicle completed turn onto road {self.current_position} at parameter {param:.3f}, position: ({ix:.1f}, {iy:.1f})"
+        else:
+            # Compute position along the turn arc for partial turns
+            px, py = self._turn_arc_position(self.turn_progress)
+            self.x, self.y = px, py
+            return f"Vehicle turning to road {self.next_road_idx}, turn progress: {self.turn_progress:.2f}"
+
+    def _turn_arc_position(self, progress):
+        """Calculate position along a turn arc at the given progress (0.0 to 1.0)"""
+        if not hasattr(self, 'turn_origin') or not hasattr(self, 'turn_target'):
+            return self.x, self.y
+            
+        # Get positions
+        origin_x, origin_y = self.turn_origin
+        target_x, target_y = self.turn_target
+        
+        # Use cubic easing for smooth turn motion
+        t = progress
+        eased_t = t * t * (3 - 2 * t)  # Smooth ease-in-ease-out curve
+        
+        # Intermediate position
+        x = origin_x + (target_x - origin_x) * eased_t
+        y = origin_y + (target_y - origin_y) * eased_t
+        
+        return x, y
+
+    def _compute_parameter_on_road(self, road, x, y):
+        """Compute the parameter t (0.0 to 1.0) for a point (x,y) on a road segment"""
+        x1, y1, x2, y2 = road[:4]
+        
+        # Calculate road vector
+        road_vector_x = x2 - x1
+        road_vector_y = y2 - y1
+        road_length_squared = road_vector_x**2 + road_vector_y**2
+        
+        if road_length_squared < 0.0001:  # Avoid division by zero
+            return 0.0
+            
+        # Calculate vector from road start to point
+        point_vector_x = x - x1
+        point_vector_y = y - y1
+        
+        # Project point vector onto road vector (dot product)
+        projection = (point_vector_x * road_vector_x + point_vector_y * road_vector_y) / road_length_squared
+        
+        # Clamp to [0,1] to ensure we stay on the road segment
+        parameter = max(0.0, min(1.0, projection))
+        
+        print(f"{self.name}: Computed parameter {parameter:.3f} for point ({x:.1f},{y:.1f}) on road segment")
+        return parameter
+
+    def update_coordinates(self):
+        """Linear interpolation along current road using movement_progress."""
+        if self.current_position>=len(self.roads):
+            return
+        r=self.roads[self.current_position]
+        x1,y1,x2,y2=r[:4]
+        t=self.movement_progress
+        self.x=x1+(x2-x1)*t
+        self.y=y1+(y2-y1)*t
+
+    async def _check_road_capacity(self, road_idx):
+        if road_idx<0 or road_idx>=len(self.roads):
+            return False
+        road=self.roads[road_idx]
+        if len(road)<6:
+            return True
+        cap=road[4]
+        rdid=road[5]
+        if rdid not in self.road_occupancy:
+            self.road_occupancy[rdid]=0
+        return (self.road_occupancy[rdid]<cap)
 
     async def _check_for_obstacles(self, position):
-        x, y = position
-        
-        # Check for traffic lights
+        """Check lights/ped crossings. Return True if blocked."""
+        x,y=position
+        # Traffic lights
         for light in self.traffic_lights:
-            if is_nearby((light["x"], light["y"]), (x, y), threshold=50):
-                light_id = AgentId(light["id"], "default")
+            if is_nearby((light["x"],light["y"]),(x,y),threshold=50):
+                light_id=AgentId(light["id"],"default")
                 try:
-                    res = await self.runtime.send_message(
-                        MyMessageType(content="request_state", source=self.name), 
+                    res=await self.runtime.send_message(
+                        MyMessageType(content="request_state",source=self.name),
                         light_id
                     )
                     if "red" in res.content.lower():
-                        print(f"{self.name} stopped at red light {light['id']}")
+                        print(f"{self.name} blocked at red light {light['id']}")
                         return True
-                    else:
-                        print(f"{self.name} passing through green light {light['id']}")
-                except Exception as e:
-                    print(f"Error checking traffic light {light['id']}: {e}")
-        
-        # Check for pedestrian crossings
+                except:
+                    if self.current_wait>2:
+                        return False
+                    return True
+        # Crossings
         for crossing in self.crossings:
-            if is_nearby((crossing["x"], crossing["y"]), (x, y), threshold=40):
-                crossing_id = AgentId(crossing["id"], "default")
+            if is_nearby((crossing["x"],crossing["y"]),(x,y),threshold=40):
+                crossing_id=AgentId(crossing["id"],"default")
                 try:
-                    res = await self.runtime.send_message(
-                        MyMessageType(content="request_state", source=self.name), 
+                    res=await self.runtime.send_message(
+                        MyMessageType(content="request_state",source=self.name),
                         crossing_id
                     )
-                    
                     if "occupied" in res.content.lower():
-                        print(f"{self.name} stopped at occupied crossing {crossing['id']}")
+                        if self.current_wait>=3:
+                            return False
                         return True
-                except Exception as e:
-                    print(f"Error checking pedestrian crossing {crossing['id']}: {e}")
-        
-        # Only force movement if we've been waiting too long
-        if self.current_wait > 10:
-            print(f"{self.name} has been waiting for {self.current_wait} steps - forcing movement")
+                except:
+                    if self.current_wait>1:
+                        return False
+                    return True
+
+        if self.current_wait>4:
+            self.current_wait=0
             return False
-            
         return False
-
-    def get_next_position(self):
-        if self.current_position + 1 < len(self.roads):
-            return self.roads[self.current_position + 1][:2]
-        elif len(self.roads) > 0:
-            return self.roads[0][:2]
-        return None
-
-    def update_coordinates(self):
-        """
-        Simplified version: 
-        - No partial-turn interpolation.
-        - No 'teleportation prevention' checks.
-        - We only do direct linear interpolation from (x1, y1) to (x2, y2)
-        based on self.movement_progress.
-        """
-        # If we don't have a valid current_position, just bail out
-        if self.current_position >= len(self.roads):
-            return
-
-        road = self.roads[self.current_position]
-        # Extract the start/end coordinates of this road
-        x1, y1, x2, y2 = road[:4]
-
-        # Linear interpolation along the road
-        # (movement_progress goes from 0.0 to 1.0)
-        new_x = x1 + (x2 - x1) * self.movement_progress
-        new_y = y1 + (y2 - y1) * self.movement_progress
-
-        # Just set the position directly
-        self.x = new_x
-        self.y = new_y
-
-
-    async def _check_road_capacity(self, road_index):
-        if road_index < 0 or road_index >= len(self.roads):
-            return False
-        road = self.roads[road_index]
-        if len(road) < 6:
-            return True
-        
-        capacity = road[4]
-        road_id = road[5]
-        if road_id not in self.road_occupancy:
-            self.road_occupancy[road_id] = 0
-        
-        if self.road_occupancy[road_id] < capacity:
-            return True
-        else:
-            return False
 
     async def _check_for_parking(self):
-        if self.parking_cooldown > 0:
+        if self.parking_cooldown>0:
             return False
-        if random.random() > self.parking_desire:
+        if random.random()>self.parking_desire:
             return False
-        
-        for parking in self.parking_areas:
-            if parking["id"] in self.recent_parkings:
-                print(f"{self.name}: Skipping recently used parking area {parking['id']}")
+        for p in self.parking_areas:
+            if p["id"] in self.recent_parkings:
                 continue
-                
-            parking_x, parking_y = parking["x"], parking["y"]
-            distance = math.sqrt((self.x - parking_x)**2 + (self.y - parking_y)**2)
-            print(f"{self.name}: Distance to parking {parking['id']}: {distance:.1f} units")
-            if distance < 150:
-                print(f"{self.name}: Found parking area {parking['id']} at distance {distance:.1f}")
-                self.target_parking = parking["id"]
-                parking_response = await self._request_parking(parking["id"])
-                if "accepted" in parking_response:
+            dist=math.sqrt((self.x-p["x"])**2+(self.y-p["y"])**2)
+            if dist<150:
+                self.target_parking=p["id"]
+                resp=await self._request_parking(self.target_parking)
+                if "accepted" in resp:
                     try:
-                        parking_time = int(parking_response.split("=")[1])
-                    except (IndexError, ValueError):
-                        parking_time = 3
-                    self.parking_state = "parking"
-                    self.parking_timer = parking_time
-                    self.parked = True
-                    print(f"{self.name}: Starting to park at {parking['id']}, time: {parking_time}s")
+                        sec=int(resp.split("=")[1])
+                    except:
+                        sec=3
+                    self.parking_state="parking"
+                    self.parking_timer=sec
+                    self.parked=True
                     return True
                 else:
-                    self.target_parking = None
-                    print(f"{self.name}: Parking rejected at {parking['id']}: {parking_response}")
+                    self.target_parking=None
         return False
 
-    def _find_nearest_parking(self):
-        """Find the nearest available parking area that hasn't been recently used"""
-        nearest_parking = None
-        min_distance = float('inf')
-        
-        for parking in self.parking_areas:
-            if parking["id"] in self.recent_parkings:
-                print(f"{self.name}: Skipping recently used parking area {parking['id']}")
-                continue
-                
-            parking_x, parking_y = parking["x"], parking["y"]
-            distance = math.sqrt((self.x - parking_x)**2 + (self.y - parking_y)**2)
-            
-            if distance < min_distance and distance < 150:
-                min_distance = distance
-                nearest_parking = parking
-                
-        if nearest_parking:
-            print(f"{self.name}: Found nearest parking area {nearest_parking['id']} at distance {min_distance:.1f}")
-        
-        return nearest_parking
-
     async def _exit_parking(self):
-        if not self.target_parking or self.parking_state != "parked":
+        if not self.target_parking or self.parking_state!="parked":
             return
-            
-        exit_response = await self._request_exit(self.target_parking)
-        if "accepted" in exit_response:
+        resp=await self._request_exit(self.target_parking)
+        if "accepted" in resp:
             try:
-                exit_time = int(exit_response.split("=")[1])
-            except (IndexError, ValueError):
-                exit_time = 2
-            self.parking_state = "exiting"
-            self.parking_timer = exit_time
-            print(f"{self.name}: Starting to exit from {self.target_parking}, time: {exit_time}s")
-        else:
-            print(f"{self.name}: Exit rejected from {self.target_parking}: {exit_response}")
+                sec=int(resp.split("=")[1])
+            except:
+                sec=2
+            self.parking_state="exiting"
+            self.parking_timer=sec
 
-    async def _request_parking(self, parking_id):
+    async def _request_parking(self, pid):
         try:
-            parking_agent_id = AgentId(parking_id, "default")
-            response = await self.runtime.send_message(
-                MyMessageType(content="park", source=self.name), 
-                parking_agent_id
+            aid=AgentId(pid,"default")
+            r=await self.runtime.send_message(
+                MyMessageType(content="park",source=self.name),
+                aid
             )
-            return response.content
-        except Exception as e:
-            print(f"{self.name}: Error requesting parking: {e}")
+            return r.content
+        except:
             return "error"
 
-    async def _request_exit(self, parking_id):
+    async def _request_exit(self, pid):
         try:
-            parking_agent_id = AgentId(parking_id, "default")
-            response = await self.runtime.send_message(
-                MyMessageType(content="exit", source=self.name), 
-                parking_agent_id
+            aid=AgentId(pid,"default")
+            r=await self.runtime.send_message(
+                MyMessageType(content="exit",source=self.name),
+                aid
             )
-            return response.content
-        except Exception as e:
-            print(f"{self.name}: Error requesting exit: {e}")
+            return r.content
+        except:
             return "error"
+
+    def _get_next_road(self):
+        """Pick next road from explicit connections or fallback to i+1."""
+        if self.current_position in self.road_connections:
+            options=self.road_connections[self.current_position]
+            if options:
+                if self.last_road is not None:
+                    filtered=[o for o in options if o!=self.last_road]
+                    if filtered:
+                        return random.choice(filtered)
+                return random.choice(options)
+        # fallback: check turn_options
+        if self.current_position in self.turn_options:
+            tlist=self.turn_options[self.current_position]
+            if tlist:
+                roads=[x[0] for x in tlist]
+                if self.last_road is not None:
+                    filtered=[r for r in roads if r!=self.last_road]
+                    if filtered:
+                        return random.choice(filtered)
+                return random.choice(roads)
+        # final fallback
+        idx=(self.current_position+1)%len(self.roads)
+        if idx==self.current_position:
+            idx=(idx+1)%len(self.roads)
+        return idx
+
+    async def _exit_simulation(self):
+        self.exiting=True
+        self.removed=True
+        self.x=-9999
+        self.y=-9999
+        self.parked=False
+        self.parking_state="exited"
+        # try manager
+        try:
+            sim_mgr=AgentId("simulation_manager","default")
+            await self.runtime.send_message(
+                MyMessageType(content=f"exit_notification|{self.name}",source=self.name),
+                sim_mgr
+            )
+        except:
+            pass
+        print(f"⚠️ {self.name} EXITING SIMULATION ⚠️")
+        return True
+
+    async def _check_for_turn(self):
+        """Check if we should turn at this point, based on road connections and turn options."""
+        # Check if we're at an eligible turning progress
+        if self.movement_progress < 0.75 or self.is_turning:
+            return False
+            
+        # Skip if we just turned (cooldown)
+        if self.turning_cooldown > 0:
+            return False
+            
+        current_road = self.roads[self.current_position]
+        road_id = current_road[5] if len(current_road) >= 6 else f"road_{self.current_position}"
+        
+        # Get current position on road
+        x1, y1, x2, y2 = current_road[:4]
+        current_x = x1 + (x2 - x1) * self.movement_progress
+        current_y = y1 + (y2 - y1) * self.movement_progress
+        
+        # Check turn options from our pre-calculated list
+        if self.current_position in self.turn_options and self.turn_options[self.current_position]:
+            # Get random turn weighted by direction (prefer continuing in same direction)
+            weights = []
+            options = []
+            
+            current_direction = self._get_road_direction(current_road)
+            
+            for next_road_idx, intersection, from_dir, to_dir in self.turn_options[self.current_position]:
+                # Skip turning to the road we just came from
+                if next_road_idx == self.last_road:
+                    continue
+                    
+                # Check if the next road has capacity
+                if not await self._check_road_capacity(next_road_idx):
+                    continue
+                    
+                # Calculate weight based on direction change
+                weight = 1.0
+                # Prefer continuing in same direction
+                if from_dir == to_dir:
+                    weight = 3.0  # Much higher weight for continuing straight
+                # Lower weight for U-turns
+                elif self._is_opposite_direction(from_dir, to_dir):
+                    weight = 0.2  # Much lower weight for U-turns
+                
+                # Add to options
+                options.append((next_road_idx, intersection))
+                weights.append(weight)
+                
+            # If we have options, select one weighted by direction preference
+            if options:
+                # Normalize weights
+                total = sum(weights)
+                if total > 0:
+                    weights = [w/total for w in weights]
+                    
+                # Use the weights for selection
+                if random.random() < 0.9:  # 90% chance to use weighted selection
+                    # Weighted random selection
+                    r = random.random()
+                    cumulative = 0
+                    selected_idx = 0
+                    for i, w in enumerate(weights):
+                        cumulative += w
+                        if r <= cumulative:
+                            selected_idx = i
+                            break
+                    selected = options[selected_idx]
+                else:
+                    # Pure random 10% of the time
+                    selected = random.choice(options)
+                
+                # Set up the turn
+                self.next_road_idx, intersection_point = selected
+                next_road = self.roads[self.next_road_idx]
+                next_road_id = next_road[5] if len(next_road) >= 6 else f"road_{self.next_road_idx}"
+                
+                # Store origin and target to compute the turn arc
+                self.turn_origin = (current_x, current_y)
+                self.turn_target = intersection_point
+                self.turn_progress = 0.0
+                
+                print(f"{self.name} beginning turn from {road_id} to {next_road_id} at intersection {intersection_point}")
+                
+                return True
+        
+        # Check if we should turn based on connections even if not at a detected intersection
+        if self.movement_progress > 0.85 and self.current_position in self.road_connections:
+            options = self.road_connections[self.current_position]
+            valid_options = []
+            
+            for next_idx in options:
+                # Skip the road we just came from
+                if next_idx == self.last_road:
+                    continue
+                    
+                # Check if the road has capacity
+                if not await self._check_road_capacity(next_idx):
+                    continue
+                    
+                valid_options.append(next_idx)
+                
+            if valid_options:
+                # Select a random option
+                self.next_road_idx = random.choice(valid_options)
+                next_road = self.roads[self.next_road_idx]
+                next_road_id = next_road[5] if len(next_road) >= 6 else f"road_{self.next_road_idx}"
+                
+                # Use road endpoints for turn calculation
+                self.turn_origin = (current_x, current_y)
+                
+                # Try to find intersection point
+                intersection = get_exact_intersection_point(current_road, next_road)
+                if intersection:
+                    self.turn_target = intersection
+                else:
+                    # Fallback to start of next road
+                    self.turn_target = (next_road[0], next_road[1])
+                    
+                self.turn_progress = 0.0
+                
+                print(f"{self.name} beginning turn from {road_id} to {next_road_id} at calculated intersection {self.turn_target}")
+                
+                return True
+                
+        # No valid turns found
+        return False
