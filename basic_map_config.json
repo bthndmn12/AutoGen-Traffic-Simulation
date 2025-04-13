@@ -97,7 +97,7 @@
     },
     { 
       "id": "middle_vertical_right", 
-      "x1": 450, "y1": 50, "x2": 450, "y2": 450, 
+      "x1": 450, "y1": 50, "x2": 450, "y2": 500, 
       "capacity": 2, 
       "color": "gray",
       "one_way": true,
@@ -115,6 +115,6 @@
     { "id": "despawn_left", "road_id": "left_vertical_road", "x": 50, "y": 490 },
     { "id": "despawn_right", "road_id": "right_vertical_road", "x": 750, "y": 10 },
     { "id": "despawn_bottom", "road_id": "bottom_horizontal_road", "x": 10, "y": 450 },
-    { "id": "despawn_middle_right", "road_id": "middle_vertical_right", "x": 450, "y": 450 }
+    { "id": "despawn_middle_right", "road_id": "middle_vertical_right", "x": 450, "y": 500 }
   ]
 }

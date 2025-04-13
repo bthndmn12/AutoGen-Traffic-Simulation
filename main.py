@@ -430,6 +430,20 @@ async def main():
         else:
             print("No wait times recorded in this simulation.")
             
+        print("\n=== Detailed Wait Time per Vehicle ===")
+        for vehicle_id, agent in vehicles:
+            if agent.wait_times:
+                max_wait_time = max(agent.wait_times)
+                min_wait_time = min(agent.wait_times)
+                avg_wait_time = sum(agent.wait_times) / len(agent.wait_times)
+
+                print(f"\nVehicle ID: {vehicle_id}")
+                print(f"  Max Wait Time: {max_wait_time} sec")
+                print(f"  Min Wait Time: {min_wait_time} sec")
+                print(f"  Average Wait Time: {avg_wait_time:.2f} sec")
+            else:
+                print(f"\nVehicle ID: {vehicle_id} has no wait times recorded.")
+            
         print(f"\nVehicles that entered the system: {simulation_stats['vehicles_entered']}")
         print(f"Vehicles that exited the system: {simulation_stats['vehicles_exited']}")
         

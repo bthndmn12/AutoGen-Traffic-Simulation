@@ -123,7 +123,7 @@
     },
     { 
       "id": "middle_vertical_right", 
-      "x1": 450, "y1": 50, "x2": 450, "y2": 450, 
+      "x1": 450, "y1": 50, "x2": 450, "y2": 500, 
       "capacity": 2, 
       "color": "gray",
       "one_way": true,
