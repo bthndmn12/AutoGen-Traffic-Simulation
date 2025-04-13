@@ -31,9 +31,12 @@ class PedestrianCrossingRL:
                 reward = -queue_length  # Allowing crossing after proper wait
                 self.wait_time  = 0  # Reset the wait time after stopping for pedestrians
             else: 
-                reward = -100  # Strong penalty before the required waiting time
-        else: # Action 1: pedestrian crossing is free
-            reward = queue_length 
+                reward = -50  # Strong penalty before the required waiting time
+        else:  
+            if queue_length > 3: 
+                reward = -queue_length  
+            else:
+                reward = queue_length 
 
         alfa = self.alfa if self.alfa is not None else 1 / self.action_counts[action]
         self.q[action] += alfa * (reward - self.q[action])
