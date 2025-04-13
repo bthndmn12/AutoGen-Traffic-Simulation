@@ -26,8 +26,10 @@ from vis.simui import (
 )
 from traffic_agents import (
     VehicleAssistant, 
-    TrafficLightAssistant, 
+    TrafficLightAssistant,
+    TrafficLightRLAssistant,  # Import the RL traffic light agent 
     PedestrianCrossingAssistant,
+    PedestrianCrossingRLAssistant,  # Import the RL pedestrian crossing agent
     ParkingAssistant
 )
 
@@ -58,6 +60,12 @@ def parse_command_line_args():
                         help='Average exit times from parking (seconds)')
     parser.add_argument('--parking-capacity', type=int, default=None, 
                         help='Default capacity of parking areas')
+    parser.add_argument('--use-rl', action='store_true', 
+                        help='Use reinforcement learning agents instead of standard agents')
+    parser.add_argument('--epsilon', type=float, default=0.1, 
+                        help='Exploration rate for RL agents (epsilon value)')
+    parser.add_argument('--learning-rate', type=float, default=0.1, 
+                        help='Learning rate for RL agents (alpha value)')
     
     return parser.parse_args()
 
@@ -264,17 +272,31 @@ async def register_vehicles(runtime, vehicles_config, road_tuples, crossings, li
     return vehicles
 
 
-async def register_traffic_lights(runtime, lights, sim_params, visualizer):
+async def register_traffic_lights(runtime, lights, sim_params, visualizer, use_rl=False, epsilon=0.1, learning_rate=None):
     """Register and visualize traffic light agents"""
     for tl in lights:
         try:
-            await TrafficLightAssistant.register(
-                runtime, tl["id"], 
-                lambda name=tl["id"]: TrafficLightAssistant(
-                    name,
-                    change_time=sim_params.get("traffic_light_wait")
+            if use_rl:
+                # Use RL-based traffic light agent
+                await TrafficLightRLAssistant.register(
+                    runtime, tl["id"], 
+                    lambda name=tl["id"]: TrafficLightRLAssistant(
+                        name,
+                        epsilon=epsilon,
+                        learning_rate=learning_rate
+                    )
                 )
-            )
+                print(f"Registered RL Traffic Light Agent: {tl['id']}")
+            else:
+                # Use standard traffic light agent
+                await TrafficLightAssistant.register(
+                    runtime, tl["id"], 
+                    lambda name=tl["id"]: TrafficLightAssistant(
+                        name,
+                        change_time=sim_params.get("traffic_light_wait")
+                    )
+                )
+                print(f"Registered Standard Traffic Light Agent: {tl['id']}")
         except ValueError:
             pass  # Agent already exists
             
@@ -282,17 +304,33 @@ async def register_traffic_lights(runtime, lights, sim_params, visualizer):
         visualizer.add_object(TrafficLightObject(tl["id"], agent, x=tl["x"], y=tl["y"]))
 
 
-async def register_pedestrian_crossings(runtime, crossings, sim_params, visualizer):
+async def register_pedestrian_crossings(runtime, crossings, sim_params, visualizer, use_rl=False, epsilon=0.1, learning_rate=None):
     """Register and visualize pedestrian crossing agents"""
     for c in crossings:
         try:
-            await PedestrianCrossingAssistant.register(
-                runtime, c["id"], 
-                lambda name=c["id"]: PedestrianCrossingAssistant(
-                    name,
-                    wait_time=sim_params.get("pedestrian_wait")
+            if use_rl:
+                # Use RL-based pedestrian crossing agent
+                road_type = c.get("road_type", "2_carriles")  # Default to 2 lanes if not specified
+                await PedestrianCrossingRLAssistant.register(
+                    runtime, c["id"], 
+                    lambda name=c["id"], road_type=road_type: PedestrianCrossingRLAssistant(
+                        name,
+                        road_type=road_type,
+                        epsilon=epsilon,
+                        learning_rate=learning_rate
+                    )
                 )
-            )
+                print(f"Registered RL Pedestrian Crossing Agent: {c['id']} for {road_type} road")
+            else:
+                # Use standard pedestrian crossing agent
+                await PedestrianCrossingAssistant.register(
+                    runtime, c["id"], 
+                    lambda name=c["id"]: PedestrianCrossingAssistant(
+                        name,
+                        wait_time=sim_params.get("pedestrian_wait")
+                    )
+                )
+                print(f"Registered Standard Pedestrian Crossing Agent: {c['id']}")
         except ValueError:
             pass  # Agent already exists
             
@@ -356,6 +394,10 @@ async def main():
         # Parse command-line arguments
         args = parse_command_line_args()
         
+        # Print information about RL mode
+        if args.use_rl:
+            print(f"Using Reinforcement Learning agents with epsilon={args.epsilon}, learning_rate={args.learning_rate}")
+        
         # Load and override configuration
         config = load_and_override_config(args)
 
@@ -387,14 +429,47 @@ async def main():
         # Register all agent types
         parking_agents = await register_parking_areas(runtime, parking_areas, visualizer)
         vehicles = await register_vehicles(runtime, vehicles_config, road_tuples, crossings, lights, parking_areas, visualizer, spawn_points)
-        await register_traffic_lights(runtime, lights, sim_params, visualizer)
-        await register_pedestrian_crossings(runtime, crossings, sim_params, visualizer)
+        
+        # Register traffic lights and pedestrian crossings with RL agents if specified
+        await register_traffic_lights(
+            runtime, lights, sim_params, visualizer, 
+            use_rl=args.use_rl, epsilon=args.epsilon, learning_rate=args.learning_rate
+        )
+        
+        await register_pedestrian_crossings(
+            runtime, crossings, sim_params, visualizer, 
+            use_rl=args.use_rl, epsilon=args.epsilon, learning_rate=args.learning_rate
+        )
 
         # Launch visualizer
         visualizer_task = asyncio.create_task(visualizer.run())
 
         # Run simulation
         await run_simulation(runtime, vehicles, parking_areas, args.sim_time)
+        
+        # Additional statistics for RL agents if used
+        if args.use_rl:
+            print("\n=== Reinforcement Learning Statistics ===")
+            for tl in lights:
+                try:
+                    agent = await runtime._get_agent(AgentId(tl["id"], "default"))
+                    if hasattr(agent, 'rl_model'):  # Check if it's an RL agent
+                        print(f"{tl['id']} - Q-values: {agent.rl_model.q.tolist()}")
+                        print(f"{tl['id']} - Action counts: {agent.rl_model.action_counts.tolist()}")
+                        print(f"{tl['id']} - Total steps: {agent.rl_model.steps}")
+                except Exception as e:
+                    print(f"Error getting stats for {tl['id']}: {e}")
+                    
+            for c in crossings:
+                try:
+                    agent = await runtime._get_agent(AgentId(c["id"], "default"))
+                    if hasattr(agent, 'rl_model'):  # Check if it's an RL agent
+                        print(f"{c['id']} - Q-values: {agent.rl_model.q.tolist()}")
+                        print(f"{c['id']} - Action counts: {agent.rl_model.action_counts.tolist()}")
+                        print(f"{c['id']} - Total steps: {agent.rl_model.steps}")
+                except Exception as e:
+                    print(f"Error getting stats for {c['id']}: {e}")
+            print("=======================================\n")
 
         # Collect final statistics from vehicles
         print("\n=== Simulation Statistics ===")
