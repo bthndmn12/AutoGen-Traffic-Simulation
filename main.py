@@ -476,7 +476,19 @@ async def main():
                         print(f"{c['id']} - Total steps: {agent.rl_model.steps}")
                 except Exception as e:
                     print(f"Error getting stats for {c['id']}: {e}")
+
+            for p in parking_areas:
+                try:
+                    agent = await runtime._get_agent(AgentId(p["id"], "default"))
+                    if hasattr(agent, 'rl_model'):
+                        print(f"{p['id']} - Q-values: {agent.rl_model.q.tolist()}")
+                        print(f"{p['id']} - Action counts: {agent.rl_model.action_counts.tolist()}")
+                        print(f"{p['id']} - Total steps: {agent.rl_model.steps}")
+                except Exception as e:
+                    print(f"Error getting stats for {p['id']}: {e}")
+            
             print("=======================================\n")
+
 
         # Collect final statistics from vehicles
         print("\n=== Simulation Statistics ===")
@@ -544,10 +556,10 @@ async def main():
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
         log_filename = f"simulation_log_{timestamp}.txt"
         
-        #with open(log_filename, "w", encoding="utf-8") as log_file:
-            #log_file.write(log_writer.getvalue())
+        with open(log_filename, "w", encoding="utf-8") as log_file:
+            log_file.write(log_writer.getvalue())
             
-        #print(f"\nSimulation logs saved to {log_filename}", file=original_stdout)
+        print(f"\nSimulation logs saved to {log_filename}", file=original_stdout)
         
     finally:
         # Restore original stdout
