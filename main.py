@@ -162,30 +162,37 @@ async def initialize_visualizer(raw_roads):
     return visualizer
 
 
-async def register_parking_areas(runtime, parking_areas, visualizer):
+async def register_parking_areas(runtime, parking_areas, visualizer, use_rl=False, epsilon=0.1, learning_rate=None):
     """Register and visualize parking area agents"""
     parking_agents = []
-    
+    from traffic_agents import ParkingRLAssistant
     for p in parking_areas:
         try:
-            await ParkingAssistant.register(
-                runtime,
-                p["id"],
-                lambda name=p["id"], x=p["x"], y=p["y"], capacity=p["capacity"], 
-                       parking_time=p.get("parking_time", 2), exit_time=p.get("exit_time", 1):
-                    ParkingAssistant(name, x, y, capacity, parking_time, exit_time)
-            )
+            if use_rl:
+                await ParkingRLAssistant.register(
+                    runtime,
+                    p["id"],
+                    lambda name=p["id"], x=p["x"], y=p["y"], capacity=p["capacity"], \
+                           parking_time=p.get("parking_time", 2), exit_time=p.get("exit_time", 1):
+                        ParkingRLAssistant(name, x, y, capacity, parking_time, exit_time, epsilon=epsilon, learning_rate=learning_rate)
+                )
+                print(f"Registered RL Parking Agent: {p['id']}")
+            else:
+                await ParkingAssistant.register(
+                    runtime,
+                    p["id"],
+                    lambda name=p["id"], x=p["x"], y=p["y"], capacity=p["capacity"], \
+                           parking_time=p.get("parking_time", 2), exit_time=p.get("exit_time", 1):
+                        ParkingAssistant(name, x, y, capacity, parking_time, exit_time)
+                )
         except ValueError:
             pass  # Agent already exists
-            
         agent = await runtime._get_agent(AgentId(p["id"], "default"))
         parking_agents.append((p["id"], agent))
-        
         visualizer.add_object(ParkingAreaObject(
             p["id"], agent, x=p["x"], y=p["y"],
             parking_type=p.get("type", "street")
         ))
-    
     return parking_agents
 
 
@@ -427,7 +434,7 @@ async def main():
         visualizer = await initialize_visualizer(raw_roads)
         
         # Register all agent types
-        parking_agents = await register_parking_areas(runtime, parking_areas, visualizer)
+        parking_agents = await register_parking_areas(runtime, parking_areas, visualizer, use_rl=args.use_rl, epsilon=args.epsilon, learning_rate=args.learning_rate)
         vehicles = await register_vehicles(runtime, vehicles_config, road_tuples, crossings, lights, parking_areas, visualizer, spawn_points)
         
         # Register traffic lights and pedestrian crossings with RL agents if specified
@@ -537,10 +544,10 @@ async def main():
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
         log_filename = f"simulation_log_{timestamp}.txt"
         
-        with open(log_filename, "w", encoding="utf-8") as log_file:
-            log_file.write(log_writer.getvalue())
+        #with open(log_filename, "w", encoding="utf-8") as log_file:
+            #log_file.write(log_writer.getvalue())
             
-        print(f"\nSimulation logs saved to {log_filename}", file=original_stdout)
+        #print(f"\nSimulation logs saved to {log_filename}", file=original_stdout)
         
     finally:
         # Restore original stdout

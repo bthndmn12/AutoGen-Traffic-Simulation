@@ -28,15 +28,15 @@ class ParkingRL:
 
         # Action 0: keep vehicle parked
         if action == 0:
-            reward = -0.1 
+            reward = -2  # Stronger penalty for staying parked
 
         # Action 1: exit attempt
         else:
             if self.park_duration >= min_park_time:
-                reward = 1 if is_full else 0.5  # Encourage exit if lot is full
+                reward = 5 if is_full else 3  # Much higher reward for exiting
                 self.park_duration = 0
             else:
-                reward = -30  # Strong penalty before the required waiting time
+                reward = -2  # Mild penalty for trying to exit too early
 
         alfa = self.alfa if self.alfa is not None else 1 / self.action_counts[action]
         self.q[action] += alfa * (reward - self.q[action])
