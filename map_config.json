@@ -2,7 +2,14 @@
   "vehicles": [
     { "id": "vehicle_1", "x": 50, "y": 0, "spawn": false },
     { "id": "vehicle_2", "x": 50, "y": 0, "spawn": false },
-    { "id": "vehicle_3", "x": 50, "y": 0, "spawn": false }
+    { "id": "vehicle_3", "x": 50, "y": 0, "spawn": false },
+    { "id": "vehicle_4", "x": 750, "y": 500, "spawn": true },
+    { "id": "vehicle_5", "x": 750, "y": 500, "spawn": true },
+    { "id": "vehicle_6", "x": 750, "y": 500, "spawn": true },
+    { "id": "vehicle_7", "x": 750, "y": 500, "spawn": true },
+    { "id": "vehicle_8", "x": 750, "y": 500, "spawn": true },
+    { "id": "vehicle_9", "x": 50, "y": 0, "spawn": false },
+    { "id": "vehicle_10", "x": 50, "y": 0, "spawn": false }
   ],
   "traffic_lights": [
     { "id": "traffic_light_left_top", "x": 50, "y": 50 },
