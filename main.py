@@ -93,7 +93,10 @@ def load_and_override_config(args):
     if args.parking_capacity and "parking_areas" in config:
         print(f"Overriding parking capacity to {args.parking_capacity}")
         for parking in config.get("parking_areas", []):
-            parking["capacity"] = args.parking_capacity
+            if parking.get("type") == "building":
+                parking["capacity"] = args.parking_capacity * 2
+            else:
+                parking["capacity"] = args.parking_capacity
             
     if args.parking_time and "parking_areas" in config:
         print(f"Overriding parking time to {args.parking_time}")

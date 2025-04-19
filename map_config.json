@@ -41,10 +41,7 @@
     { "id": "crossing_bottom_3", "x": 450, "y": 450 },
     { "id": "crossing_bottom_4", "x": 650, "y": 450 }
   ],
-  "parking_areas": [
-    { "id": "middle_road_parking", "x": 375, "y": 200, "capacity": 5, "parking_time": 3, "exit_time": 2, "type": "building" },
-    
- 
+  "parking_areas": [ 
     { "id": "left_road_parking_1", "x": 30, "y": 80, "capacity": 2, "parking_time": 2, "exit_time": 1, "type": "roadside" },
     { "id": "left_road_parking_2", "x": 30, "y": 180, "capacity": 2, "parking_time": 2, "exit_time": 1, "type": "roadside" },
     { "id": "left_road_parking_3", "x": 30, "y": 280, "capacity": 2, "parking_time": 2, "exit_time": 1, "type": "roadside" },
@@ -60,7 +57,7 @@
     { "id": "top_road_parking_3", "x": 550, "y": 30, "capacity": 2, "parking_time": 2, "exit_time": 1, "type": "roadside" },
     
     { "id": "middle_road_parking_1", "x": 150, "y": 230, "capacity": 2, "parking_time": 2, "exit_time": 1, "type": "roadside" },
-    { "id": "middle_road_parking_2", "x": 350, "y": 230, "capacity": 2, "parking_time": 2, "exit_time": 1, "type": "roadside" },
+    { "id": "middle_road_parking_2", "x": 375, "y": 222, "capacity": 5, "parking_time": 3, "exit_time": 2, "type": "building" },
     { "id": "middle_road_parking_3", "x": 550, "y": 230, "capacity": 2, "parking_time": 2, "exit_time": 1, "type": "roadside" },
     
     { "id": "bottom_road_parking_1", "x": 150, "y": 430, "capacity": 2, "parking_time": 2, "exit_time": 1, "type": "roadside" },
