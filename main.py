@@ -93,10 +93,7 @@ def load_and_override_config(args):
     if args.parking_capacity and "parking_areas" in config:
         print(f"Overriding parking capacity to {args.parking_capacity}")
         for parking in config.get("parking_areas", []):
-            if parking.get("type") == "building":
-                parking["capacity"] = args.parking_capacity * 2
-            else:
-                parking["capacity"] = args.parking_capacity
+            parking["capacity"] = args.parking_capacity
             
     if args.parking_time and "parking_areas" in config:
         print(f"Overriding parking time to {args.parking_time}")
@@ -557,7 +554,7 @@ async def main():
         
         # Save log file
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-        log_filename = f"simulation_log_{timestamp}.txt"
+        log_filename = f"LOGS/simulation_log_{timestamp}.txt"
         
         with open(log_filename, "w", encoding="utf-8") as log_file:
             log_file.write(log_writer.getvalue())

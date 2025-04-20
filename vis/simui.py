@@ -390,6 +390,10 @@ class TrafficSimulationVisualizer:
         self.min_zoom = 0.1
         self.max_zoom = 5.0
 
+        self.canvas.bind("<ButtonPress-1>", self._pan_start_left)
+        self.canvas.bind("<B1-Motion>", self._pan_move_left)
+        self.canvas.bind("<ButtonRelease-1>", self._pan_end_left)
+
         print("Vis __init__: Binding events")
         self.root.bind("<Configure>", self._on_resize)
         self.canvas.bind("<MouseWheel>", self._on_mouse_wheel)
@@ -417,6 +421,22 @@ class TrafficSimulationVisualizer:
         dy = event.y - self._pan_start_y
         self.offset_x = self._pan_last_offset_x + dx
         self.offset_y = self._pan_last_offset_y + dy
+
+    def _pan_start_left(self, event):
+        self.canvas.config(cursor="fleur")
+        self._pan_start_x = event.x
+        self._pan_start_y = event.y
+        self._pan_last_offset_x = self.offset_x
+        self._pan_last_offset_y = self.offset_y
+
+    def _pan_move_left(self, event):
+        dx = event.x - self._pan_start_x
+        dy = event.y - self._pan_start_y
+        self.offset_x = self._pan_last_offset_x + dx
+        self.offset_y = self._pan_last_offset_y + dy
+
+    def _pan_end_left(self, event):
+        self.canvas.config(cursor="")
 
     def _pan_end(self, event):
         self.canvas.config(cursor="")

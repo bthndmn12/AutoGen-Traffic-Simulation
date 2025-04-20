@@ -3,57 +3,25 @@ import random
 from autogen_core import AgentId, MessageContext, message_handler
 from traffic_agents.base import MyAssistant
 from messages.types import MyMessageType
+from shapely.geometry import LineString
+from typing import Tuple
+from collections import defaultdict
 
-def is_nearby(pos1, pos2, threshold=30):
-    """Check if two positions are within a threshold distance of each other using Euclidean distance."""
-    x1, y1 = pos1
-    x2, y2 = pos2
-    distance = math.sqrt((x2 - x1)**2 + (y2 - y1)**2)
-    return distance < threshold
+
+
+Point = Tuple[float, float]
+
+def is_nearby(pos1: Point, pos2: Point, threshold: float = 30) -> bool:
+    """Return True if the Euclidean distance between pos1 and pos2 is < threshold."""
+    dx = pos2[0] - pos1[0]
+    dy = pos2[1] - pos1[1]
+    return (dx * dx + dy * dy) < threshold * threshold
 
 def get_exact_intersection_point(road1, road2):
-    """Calculate exact intersection point for two line segments."""
-    x1, y1, x2, y2 = road1[:4]
-    x3, y3, x4, y4 = road2[:4]
-
-    # Check vertical/horizontal combos quickly:
-    road1_vertical = abs(x2 - x1) < 10
-    road2_vertical = abs(x4 - x3) < 10
-    if road1_vertical and road2_vertical:
-        return None
-    road1_horizontal = abs(y2 - y1) < 10
-    road2_horizontal = abs(y4 - y3) < 10
-    if road1_horizontal and road2_horizontal:
-        return None
-
-    if road1_vertical and road2_horizontal:
-        if min(y1, y2) <= y3 <= max(y1, y2) and min(x3, x4) <= x1 <= max(x3, x4):
-            return (x1, y3)
-        return None
-
-    if road1_horizontal and road2_vertical:
-        if min(x1, x2) <= x3 <= max(x1, x2) and min(y3, y4) <= y1 <= max(y3, y4):
-            return (x3, y1)
-        return None
-
-    # Otherwise do line-line intersection:
-    try:
-        m1 = (y2 - y1) / (x2 - x1)
-        b1 = y1 - m1*x1
-        m2 = (y4 - y3) / (x4 - x3)
-        b2 = y3 - m2*x3
-        if abs(m1 - m2) < 0.0001:
-            return None
-        x_int = (b2 - b1)/(m1 - m2)
-        y_int = m1*x_int + b1
-        # Check if x_int,y_int is on both segments
-        on_road1 = (min(x1, x2) <= x_int <= max(x1, x2)) and (min(y1, y2) <= y_int <= max(y1, y2))
-        on_road2 = (min(x3, x4) <= x_int <= max(x3, x4)) and (min(y3, y4) <= y_int <= max(y3, y4))
-        if on_road1 and on_road2:
-            return (x_int, y_int)
-        return None
-    except ZeroDivisionError:
-        return None
+    line1 = LineString([(road1[0], road1[1]), (road1[2], road1[3])])
+    line2 = LineString([(road2[0], road2[1]), (road2[2], road2[3])])
+    inter = line1.intersection(line2)
+    return tuple(inter.coords[0]) if inter.geom_type == 'Point' else None
 
 class VehicleAssistant(MyAssistant):
     """Vehicle that handles movement, turning, parking, etc."""
@@ -150,12 +118,69 @@ class VehicleAssistant(MyAssistant):
         """Unused collision registry."""
         self.vehicle_registry = registry
 
-    def _validate_spawn_point(self):
-        if self.current_position < len(self.roads):
-             road = self.roads[self.current_position]
-             if len(road) >= 4:
-                 # This log confirms the final position AFTER the logic in __init__
-                 print(f"{self.name}: Spawn validation check: Position ({self.x:.1f},{self.y:.1f}) on road index {self.current_position}")
+    def _validate_spawn_point(self) -> None:
+        """
+        Pick the road segment closest to (self.x, self.y) when the agent is first
+        spawned. Updates `self.current_position`, `self.movement_progress`,
+        `self.route`, and `self.road_occupancy` exactly like the original method.
+        """
+        if not (0 <= self.current_position < len(self.roads)):
+            return                 # outside road list → nothing to do
+
+        if self.movement_progress != 0.0:      # only at spawn time
+            return
+
+        road = self.roads[self.current_position]
+        if len(road) >= 4:
+            print(f"{self.name}: Spawn validation check: "
+                f"Position ({self.x:.1f},{self.y:.1f}) "
+                f"on road index {self.current_position}")
+
+        x0, y0 = self.x, self.y                 # cache – attribute access is slow
+        best_idx = self.current_position
+        best_sq  = float("inf")                 # squared distance (no sqrt yet)
+        best_progress = 0.0                     # 0 = start‑point, 1 = end‑point
+
+        def sq_dist(px: float, py: float) -> float:
+            dx = px - x0
+            dy = py - y0
+            return dx * dx + dy * dy
+
+        # NOTE: if this loop is still hot, pre‑filter `self.roads` once in __init__
+        for i, r in enumerate(self.roads):
+            if len(r) < 4:
+                continue                        # skip malformed entries
+
+            d_start = sq_dist(r[0], r[1])
+            d_end   = sq_dist(r[2], r[3])
+            d_sq    = d_start if d_start < d_end else d_end
+
+            if d_sq < best_sq:                  # strictly closer?
+                best_sq = d_sq
+                best_idx = i
+                best_progress = 0.0 if d_start < d_end else 1.0
+
+                if best_sq == 0.0:              # perfect match – cannot beat that
+                    break
+
+        # ---------- 3) update state if we found something better ----------
+        # original threshold was 100 (px) → compare against 100²
+        if best_idx != self.current_position and best_sq < 10_000:
+            best_dist = math.sqrt(best_sq)      # only one sqrt in the whole method
+            print(f"{self.name}: Adjusted spawn road from "
+                f"{self.current_position} to {best_idx} "
+                f"(distance: {best_dist:.1f})")
+
+            self.current_position  = best_idx
+            self.movement_progress = best_progress
+            self.route             = [best_idx]
+
+            # update occupancy
+            road = self.roads[best_idx]
+            if len(road) >= 6:
+                road_id = road[5]
+                self.road_occupancy.setdefault(road_id, 0)
+                self.road_occupancy[road_id] += 1
 
     def _process_road_properties(self):
         """Reads the user’s JSON road data into internal structures."""
