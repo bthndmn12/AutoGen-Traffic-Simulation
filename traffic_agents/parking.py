@@ -172,13 +172,12 @@ class ParkingRLAssistant(MyAssistant):
     async def run_parking_rl(self):
         while True:
             await asyncio.sleep(1)
-            max_park_time = 3  # seconds
             for vehicle_id in list(self.parked_durations.keys()):
                 occupancy = self.current_occupancy
                 duration = self.parked_durations[vehicle_id]
                 reward, action = self.rl_model.step(occupancy, self.capacity)
-                # RL or forced exit after max_park_time
-                if (action == 1 and duration >= 2) or duration >= max_park_time:
+                # RL
+                if action == 1:
                     self.parked_durations.pop(vehicle_id)
                     self.exiting_vehicles[vehicle_id] = self.exit_time
                     print(f"{self.name} RL: Vehicle {vehicle_id} decided to exit (RL or forced)")
