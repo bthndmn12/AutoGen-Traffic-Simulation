@@ -723,12 +723,19 @@ class TrafficSimulationVisualizer:
                 elif obj.current_color == "yellow": color_state = "[BUSY]"
                 road_lines.append(f"{obj.road_id}: {obj.current_vehicles}/{obj.capacity} {color_state}")
 
+        current_yview_left_text = self.left_info_text.yview()
         self.left_info_text.config(state="normal")
         self.left_info_text.delete('1.0', tk.END)
-        self.left_info_text.insert(tk.END, "\n".join(sorted(vehicle_lines)) if vehicle_lines else "(No vehicles)")
+
+        vehicle_lines_sorted = sorted(
+            vehicle_lines,
+             key=lambda line: int(line.split(":")[0].split("_")[1])
+        )
+        self.left_info_text.insert(tk.END, "\n".join(vehicle_lines_sorted) if vehicle_lines else "(No vehicles)")
+        self.left_info_text.yview_moveto(current_yview_left_text[0])
         self.left_info_text.config(state="disabled")
 
-        current_yview = self.right_info_text.yview()
+        current_yview_right_text = self.right_info_text.yview()
         self.right_info_text.config(state="normal")
         self.right_info_text.delete('1.0', tk.END)
         content_added = False
@@ -742,7 +749,7 @@ class TrafficSimulationVisualizer:
             self.right_info_text.insert(tk.END, "--- Crossings ---\n" + "\n".join(sorted(crossing_lines)) + "\n\n"); content_added=True
         if not content_added:
             self.right_info_text.insert(tk.END, "(No infrastructure data)")
-        self.right_info_text.yview_moveto(current_yview[0])
+        self.right_info_text.yview_moveto(current_yview_right_text[0])
         self.right_info_text.config(state="disabled")
 
     def stop(self):

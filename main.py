@@ -500,7 +500,7 @@ async def main():
             if agent.entered:
                 simulation_stats["vehicles_entered"] += 1
                 # Check if vehicle has exited the simulation (despawned)
-                if not hasattr(agent, 'x') or agent.x is None:
+                if not hasattr(agent, 'x') or agent.x == -9999:
                     simulation_stats["vehicles_exited"] += 1
                 
                 # Collect wait times from vehicles

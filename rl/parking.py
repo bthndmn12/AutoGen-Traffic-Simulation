@@ -13,7 +13,7 @@ class ParkingRL:
         self.steps = 0  
         self.park_duration = 0 # Time a vehicle has been parked
 
-    def choose_action(self, epsilon=0.1):
+    def choose_action(self, epsilon=0.15):
         if self.generador.random() < epsilon:
             return self.generador.integers(0, len(self.q))  # Explore
         return np.argmax(self.q)  # Exploit
@@ -28,7 +28,7 @@ class ParkingRL:
 
         # Action 0: keep vehicle parked
         if action == 0:
-            reward = -2  # Stronger penalty for staying parked
+            reward = 1 if self.park_duration < min_park_time else -1
 
         # Action 1: exit attempt
         else:
