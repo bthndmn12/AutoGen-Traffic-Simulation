@@ -380,7 +380,7 @@ async def run_simulation(runtime, vehicles, parking_areas, simulation_steps):
                 )
                 print(f"Vehicle {vehicle_id} moved to coordinates ({agent.x}, {agent.y})")
             
-        await asyncio.sleep(1)
+        await asyncio.sleep(0.1)
 
 
 async def main():
@@ -559,10 +559,10 @@ async def main():
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
         log_filename = f"LOGS/simulation_log_{timestamp}.txt"
         
-        with open(log_filename, "w", encoding="utf-8") as log_file:
-            log_file.write(log_writer.getvalue())
+        # with open(log_filename, "w", encoding="utf-8") as log_file:
+            # log_file.write(log_writer.getvalue())
             
-        print(f"\nSimulation logs saved to {log_filename}", file=original_stdout)
+        # print(f"\nSimulation logs saved to {log_filename}", file=original_stdout)
         
     finally:
         # Restore original stdout
